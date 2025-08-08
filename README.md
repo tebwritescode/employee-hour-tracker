@@ -6,6 +6,7 @@
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ---
 
@@ -237,20 +238,12 @@ npm run install-deps
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🤝 Contributing
+## Support
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📧 Support
-
-For issues, questions, or suggestions, please open an issue on the [GitHub repository](https://github.com/tebwritescode/employee-hour-tracker/issues).
+Issues? Questions? Praise-singing?  
+File an issue on GitHub or yell at [teb](https://github.com/tebwritescode).
 
 ---
-
-<p align="center">Made with ❤️ by <a href="https://github.com/tebwritescode">tebwritescode</a></p>
+👑 Created by: [tebbydog0605](https://github.com/tebwritescode)  
+🐋 Docker Hub: [tebwritescode](https://hub.docker.com/u/tebwritescode)  
+💻 Website: [tebwrites.code](https://tebwrites.code)
