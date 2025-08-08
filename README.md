@@ -234,10 +234,6 @@ npm run install-deps
 - Week navigation may occasionally show incorrect dates when changing weeks rapidly
 - Status markers might not update immediately in some edge cases with week transitions
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## Support
 
 Issues? Questions? Praise-singing?  
