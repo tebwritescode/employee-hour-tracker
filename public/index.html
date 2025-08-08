@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Hour Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Employee Hour Tracker</h1>
+            <nav>
+                <button id="time-tracking-tab" class="nav-btn active">Time Tracking</button>
+                <button id="analytics-tab" class="nav-btn">Analytics</button>
+                <button id="management-tab" class="nav-btn">Management</button>
+            </nav>
+        </header>
+
+        <div id="time-tracking-section" class="section active">
+            <div class="week-selector">
+                <button id="prev-week">&larr;</button>
+                <input type="date" id="week-picker">
+                <button id="next-week">&rarr;</button>
+                <span id="week-display"></span>
+            </div>
+
+            <div class="time-grid-container">
+                <table id="time-grid" class="time-grid">
+                    <thead>
+                        <tr>
+                            <th class="employee-header">Employee</th>
+                            <th>Monday</th>
+                            <th>Tuesday</th>
+                            <th>Wednesday</th>
+                            <th>Thursday</th>
+                            <th>Friday</th>
+                            <th>Saturday</th>
+                            <th>Sunday</th>
+                        </tr>
+                    </thead>
+                    <tbody id="time-grid-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="analytics-section" class="section">
+            <div class="analytics-header">
+                <h2>Analytics Dashboard</h2>
+                <div class="export-buttons">
+                    <button id="export-csv" class="btn btn-secondary">Export CSV</button>
+                    <button id="export-json" class="btn btn-secondary">Export JSON</button>
+                </div>
+            </div>
+            
+            <div class="date-range-controls">
+                <div class="date-preset-buttons">
+                    <button id="preset-week" class="btn btn-preset active">Last Week</button>
+                    <button id="preset-month" class="btn btn-preset">Last Month</button>
+                    <button id="preset-90days" class="btn btn-preset">Last 90 Days</button>
+                    <button id="preset-custom" class="btn btn-preset">Custom Range</button>
+                </div>
+                <div class="custom-date-range" id="custom-date-range" style="display: none;">
+                    <input type="date" id="start-date" class="date-input">
+                    <span class="date-separator">to</span>
+                    <input type="date" id="end-date" class="date-input">
+                    <button id="apply-date-range" class="btn btn-primary">Apply</button>
+                </div>
+            </div>
+            
+            <div class="analytics-grid">
+                <div class="stat-card">
+                    <h3>Total Employees</h3>
+                    <div class="stat-value" id="total-employees">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Weeks Tracked</h3>
+                    <div class="stat-value" id="total-weeks">0</div>
+                </div>
+                <div class="stat-card entered">
+                    <h3>Total Entered</h3>
+                    <div class="stat-value" id="total-entered">0</div>
+                </div>
+                <div class="stat-card not-entered">
+                    <h3>Total Not Entered</h3>
+                    <div class="stat-value" id="total-not-entered">0</div>
+                </div>
+                <div class="stat-card incorrect">
+                    <h3>Total Incorrect</h3>
+                    <div class="stat-value" id="total-incorrect">0</div>
+                </div>
+            </div>
+
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>Overall Status Distribution</h3>
+                    <canvas id="overall-chart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Employee Performance</h3>
+                    <canvas id="employee-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="management-section" class="section">
+            <div id="login-form" class="login-container">
+                <h2>Management Login</h2>
+                <form id="auth-form">
+                    <input type="text" id="username" placeholder="Username" required>
+                    <input type="password" id="password" placeholder="Password" required>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <div id="login-error" class="error-message"></div>
+            </div>
+
+            <div id="management-content" class="management-content" style="display: none;">
+                <div class="management-header">
+                    <h2>Employee Management</h2>
+                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                </div>
+                
+                <div class="add-employee-form">
+                    <h3>Add New Employee</h3>
+                    <form id="add-employee-form">
+                        <input type="text" id="employee-name" placeholder="Employee Name" required>
+                        <button type="submit" class="btn btn-primary">Add Employee</button>
+                    </form>
+                </div>
+
+                <div class="employees-list">
+                    <h3>Current Employees</h3>
+                    <div id="employees-container"></div>
+                </div>
+
+                <div class="settings-management">
+                    <h3>Application Settings</h3>
+                    <div class="setting-item">
+                        <label for="default-week-offset">Default Week to Launch To:</label>
+                        <select id="default-week-offset" class="setting-input">
+                            <option value="0">Current Week</option>
+                            <option value="-1">Last Week</option>
+                            <option value="-2">2 Weeks Ago</option>
+                            <option value="-3">3 Weeks Ago</option>
+                            <option value="-4">4 Weeks Ago</option>
+                            <option value="1">Next Week</option>
+                        </select>
+                        <button id="save-week-setting" class="btn btn-primary">Save</button>
+                    </div>
+                    <div id="settings-message" class="message"></div>
+                </div>
+
+                <div class="credential-management">
+                    <h3>Change Admin Credentials</h3>
+                    <form id="change-credentials-form">
+                        <div class="credential-fields">
+                            <input type="text" id="new-username" placeholder="New Username" required>
+                            <input type="password" id="new-password" placeholder="New Password" required>
+                            <input type="password" id="confirm-password" placeholder="Confirm Password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Credentials</button>
+                    </form>
+                    <div id="credential-message" class="message"></div>
+                </div>
+
+                <div class="danger-zone">
+                    <h3>⚠️ Danger Zone</h3>
+                    <p class="danger-warning">The actions below are irreversible and will permanently delete data.</p>
+                    
+                    <div class="danger-action">
+                        <h4>Clear Only Analytics Data</h4>
+                        <p>This will permanently delete all time entries but keep employee records intact.</p>
+                        <input type="text" id="clear-analytics-confirmation" placeholder="Type 'CLEAR ANALYTICS' to confirm" class="danger-input">
+                        <button id="clear-analytics-btn" class="btn btn-warning" disabled>Clear Analytics Data</button>
+                    </div>
+                    
+                    <div class="danger-action">
+                        <h4>Clear Only Employee Data</h4>
+                        <p>This will permanently delete all employees and their associated time entries.</p>
+                        <input type="text" id="clear-employees-confirmation" placeholder="Type 'CLEAR EMPLOYEES' to confirm" class="danger-input">
+                        <button id="clear-employees-btn" class="btn btn-warning" disabled>Clear Employee Data</button>
+                    </div>
+                    
+                    <div class="danger-action">
+                        <h4>Clear Specific Time Period</h4>
+                        <p>Delete time entries for a specific date range while keeping employees.</p>
+                        <div class="time-period-controls">
+                            <input type="date" id="clear-start-date" class="danger-input">
+                            <span>to</span>
+                            <input type="date" id="clear-end-date" class="danger-input">
+                        </div>
+                        <input type="text" id="clear-period-confirmation" placeholder="Type 'CLEAR PERIOD' to confirm" class="danger-input">
+                        <button id="clear-period-btn" class="btn btn-warning" disabled>Clear Time Period</button>
+                    </div>
+                    
+                    <div class="danger-action">
+                        <h4>Delete All Data</h4>
+                        <p>This will permanently delete all employees, time entries, and related data. This cannot be undone.</p>
+                        <input type="text" id="delete-confirmation" placeholder="Type 'DELETE ALL DATA' to confirm" class="danger-input">
+                        <button id="delete-all-data-btn" class="btn btn-danger" disabled>Delete All Data</button>
+                    </div>
+                    
+                    <div id="danger-message" class="message"></div>
+                </div>
+
+                <div class="app-info">
+                    <h3>Application Information</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong>Version:</strong> 1.0.2
+                        </div>
+                        <div class="info-item">
+                            <strong>Created by:</strong> 
+                            <a href="https://github.com/tebwritescode" target="_blank">tebwritescode</a>
+                        </div>
+                        <div class="info-item">
+                            <strong>Docker Hub:</strong> 
+                            <a href="https://hub.docker.com/u/tebwritescode" target="_blank">tebwritescode</a>
+                        </div>
+                        <div class="info-item">
+                            <strong>Website:</strong> 
+                            <a href="https://tebwrites.code" target="_blank">tebwrites.code</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
