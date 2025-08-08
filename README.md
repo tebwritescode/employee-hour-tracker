@@ -6,7 +6,6 @@
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
-![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## ✨ Features
 
