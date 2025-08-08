@@ -1,6 +1,6 @@
 # 📊 Employee Hour Tracker
 
-> A comprehensive web application for tracking employee work time with real-time analytics, management features, and automated backups.
+> A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
