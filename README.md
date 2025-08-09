@@ -11,9 +11,15 @@
 ---
 
 ## Screenshots
+
+<details>
+  <summary><i>Click to show screenshots</i></summary>
+
 ![Table View](https://teb.codes/2-Code/Flask/Employee-Hour-Tracker/Screenshot_2025-08-08_at_4.03.27_PM.png)
 ![Management](https://teb.codes/2-Code/Flask/Employee-Hour-Tracker/Screenshot_2025-08-08_at_4.03.54_PM.png)
 ![Analytics](https://teb.codes/2-Code/Flask/Employee-Hour-Tracker/Screenshot_2025-08-08_at_4.05.46_PM.png)
+
+</details>
 
 ## ✨ Features
 
