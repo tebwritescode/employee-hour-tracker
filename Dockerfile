@@ -33,6 +33,7 @@ VOLUME ["/app/data", "/app/backups"]
 # Set environment variables
 ENV NODE_ENV=production
 ENV DB_PATH=/app/data/employee_tracker.db
+ENV BASE_URL=""
 ENV SESSION_SECRET=your-secure-session-secret-change-me
 ENV DEFAULT_ADMIN_USERNAME=admin
 ENV DEFAULT_ADMIN_PASSWORD=admin123

@@ -2,7 +2,7 @@
 
 > A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
-![Version](https://img.shields.io/badge/Version-1.4.0-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.4.1-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
@@ -23,6 +23,11 @@
 </details>
 
 ## 🆕 What's New
+
+### v1.4.1 - Custom Domain Support for Share Links
+- **BASE_URL Configuration**: Added environment variable to set custom domain for share links
+- **Proper HTTPS URLs**: Share links now use your configured domain instead of IP addresses
+- **Docker & Bare Metal Support**: Works with both deployment methods
 
 ### v1.4.0 - URL-based Sharing & Date Ranges
 - **URL Parameter Support**: Navigate directly to specific date ranges via URL parameters
@@ -161,6 +166,7 @@ Access the application at `http://localhost:3000`
 | `PORT` | `3000` | Server port |
 | `NODE_ENV` | `development` | Environment mode (`development` or `production`) |
 | `DB_PATH` | `./employee_tracker.db` | Database file location |
+| `BASE_URL` | _(auto-detect)_ | Custom domain for share links (e.g., `https://cnvrgnc.us`) |
 | `SESSION_SECRET` | `employee-tracker-secret-key` | Session encryption key |
 | `DEFAULT_ADMIN_USERNAME` | `admin` | Initial admin username |
 | `DEFAULT_ADMIN_PASSWORD` | `admin123` | Initial admin password |
@@ -177,6 +183,7 @@ services:
     image: employee-hour-tracker
     environment:
       - NODE_ENV=production
+      - BASE_URL=https://your-domain.com  # Optional: Set your custom domain
       - SESSION_SECRET=your-secure-secret-here
       - DEFAULT_ADMIN_USERNAME=admin
       - DEFAULT_ADMIN_PASSWORD=change-this-password

@@ -18,7 +18,8 @@ const config = {
   sessionSecret: process.env.SESSION_SECRET || 'employee-tracker-secret-key',
   defaultAdminUsername: process.env.DEFAULT_ADMIN_USERNAME || 'admin',
   defaultAdminPassword: process.env.DEFAULT_ADMIN_PASSWORD || 'admin123',
-  nodeEnv: process.env.NODE_ENV || 'development'
+  nodeEnv: process.env.NODE_ENV || 'development',
+  baseUrl: process.env.BASE_URL || null // If not set, frontend will use window.location.origin
 };
 
 app.use(cors({
@@ -175,6 +176,12 @@ app.get('/api/check-auth', (req, res) => {
 
 app.get('/api/version', (req, res) => {
   res.json({ version: packageJson.version });
+});
+
+app.get('/api/config', (req, res) => {
+  res.json({ 
+    baseUrl: config.baseUrl
+  });
 });
 
 app.post('/api/change-credentials', requireAuth, (req, res) => {
@@ -696,6 +703,7 @@ app.listen(config.port, () => {
   console.log(`NODE_ENV: ${config.nodeEnv}`);
   console.log(`PORT: ${config.port}`);
   console.log(`DB_PATH: ${config.dbPath}`);
+  console.log(`BASE_URL: ${config.baseUrl || 'Not set (using auto-detect)'}`);
   console.log(`SESSION_SECRET: ${config.sessionSecret.substring(0, 10)}...`);
   console.log(`DEFAULT_ADMIN_USERNAME: ${config.defaultAdminUsername}`);
   console.log(`DEFAULT_ADMIN_PASSWORD: [SET]`);
