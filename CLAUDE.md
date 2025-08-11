@@ -71,9 +71,18 @@ Critical configurations for deployment:
 
 ## Important Development Notes
 
-1. **Version Updates**: ALWAYS update the version number in package.json for every change (patch for fixes, minor for features, major for breaking changes). Version is displayed in server logs and UI footer.
+1. **Version Updates**: 
+   - ALWAYS increment the MINOR version (x.Y.z) every time a Docker image is pushed
+   - Version format: MAJOR.MINOR.PATCH (e.g., 1.3.0)
+   - Version is displayed in server logs and UI footer
+   - Update version in: package.json, README.md badge, and footer HTML
 
-2. **No test suite**: This project currently has no automated tests. Consider adding tests when implementing new features.
+2. **Testing Before Completion**:
+   - ALWAYS test functionality with curl commands before marking tasks complete
+   - Test data persistence across week changes
+   - Verify changes work in the actual running application
+
+3. **No test suite**: This project currently has no automated tests. Consider adding tests when implementing new features.
 
 3. **Authentication**: Admin authentication is session-based. The requireAuth middleware (server.js:88) protects management endpoints.
 
