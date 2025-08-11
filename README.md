@@ -1,18 +1,28 @@
 # 📊 Employee Hour Tracker
 
-> A comprehensive web application for tracking employee work time with real-time analytics, management features, and automated backups.
+> A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
+![Version](https://img.shields.io/badge/Version-1.1.0-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
+## 🆕 What's New in v1.1.0
+
+### New "Empty" Status
+- Added a new default **"Empty"** status (grey) for untracked time entries
+- **"Not Entered"** status (red) is now specifically for explicitly marked non-entries
+- Status cycle: Empty → Not Entered → Entered → Incorrect
+- Automatic database migration preserves all existing data
+- Enhanced analytics with Empty status tracking
+
 ## ✨ Features
 
 ### 📅 **Time Tracking**
 - Interactive weekly grid interface for tracking employee time entries
-- Click-to-cycle through status states: Not Entered → Entered → Incorrect
+- Click-to-cycle through status states: Empty → Not Entered → Entered → Incorrect
 - Week navigation with integrated calendar picker
 - Configurable default week settings
 - Auto-save functionality for all changes
@@ -20,7 +30,7 @@
 ### 📈 **Analytics Dashboard**
 - **Visual Analytics**: Interactive charts powered by Chart.js
 - **Date Filtering**: Preset ranges (Last Week, Last Month, Last 90 Days) or custom date selection
-- **Status Distribution**: Pie chart showing overall entry patterns
+- **Status Distribution**: Pie chart showing overall entry patterns (now includes Empty status)
 - **Employee Comparison**: Bar chart for performance analysis
 - **Summary Cards**: Quick statistics at a glance
 
@@ -44,6 +54,7 @@
 - Smooth animations and transitions
 - Mobile-friendly touch interactions
 - Clean, intuitive navigation
+- New grey color scheme for Empty status
 
 ## 🚀 Quick Start
 
@@ -142,13 +153,17 @@ services:
 
 ### **Time Tracking** (`/tracking`)
 1. Select the desired week using the date picker or arrow navigation
-2. Click on any cell in the grid to cycle through status states
+2. Click on any cell in the grid to cycle through status states:
+   - **Empty** (grey): Default state for untracked entries
+   - **Not Entered** (red): Explicitly marked as not entered
+   - **Entered** (green): Time was entered
+   - **Incorrect** (orange): Entry needs correction
 3. Changes are automatically saved to the database
 4. Use the week selector to navigate between different time periods
 
 ### **Analytics** (`/analytics`)
 1. Select a date range using preset options or custom dates
-2. View status distribution in the pie chart
+2. View status distribution in the pie chart (now includes Empty status)
 3. Compare employee performance in the bar chart
 4. Export data using the export buttons
 
@@ -163,15 +178,15 @@ services:
 
 ```
 employee-hour-tracker/
-├── 📄 server.js              # Express server and API endpoints
+├── 📄 server.js              # Express server with v1.1.0 migration logic
 ├── 📄 backup.js              # Automated backup functionality
-├── 📄 package.json           # Dependencies and scripts
+├── 📄 package.json           # Dependencies and scripts (v1.1.0)
 ├── 📄 docker-compose.yml     # Docker composition
 ├── 📄 Dockerfile             # Container configuration
 ├── 📁 public/                # Frontend assets
 │   ├── 📄 index.html         # Main application HTML
-│   ├── 📄 style.css          # Styles and responsive design
-│   ├── 📄 script.js          # Frontend logic and interactions
+│   ├── 📄 style.css          # Styles with Empty status support
+│   ├── 📄 script.js          # Frontend logic with 4-state cycle
 │   └── 📄 chart.js           # Analytics visualization
 ├── 📁 backups/               # Automated backup storage
 └── 📗 employee_tracker.db    # SQLite database
@@ -179,7 +194,7 @@ employee-hour-tracker/
 
 ### Tech Stack
 - **Backend**: Node.js + Express.js
-- **Database**: SQLite3 with better-sqlite3
+- **Database**: SQLite3 with automatic migration support
 - **Frontend**: Vanilla JavaScript + Chart.js
 - **Authentication**: Express-session + bcryptjs
 - **Containerization**: Docker + Docker Compose
@@ -222,10 +237,18 @@ npm run install-deps
 | POST | `/api/logout` | End admin session | Yes |
 | GET | `/api/export/:format` | Export data | Yes |
 
+## 📊 Database Migration (v1.1.0)
+
+The application automatically migrates existing databases when upgrading to v1.1.0:
+- Preserves all existing time entry data
+- Updates default values from "Not Entered" to "Empty"
+- No manual intervention required
+- Migration runs automatically on server startup
+
 ## 🐛 Known Issues
 
-- Week navigation may occasionally show incorrect dates when changing weeks rapidly
-- Status markers might not update immediately in some edge cases with week transitions
+- Week navigation may occasionally show incorrect dates when changing weeks rapidly (Fixed in v1.1.0)
+- Status markers might not update immediately in some edge cases with week transitions (Fixed in v1.1.0)
 
 ## 📝 License
 
