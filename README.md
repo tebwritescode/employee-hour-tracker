@@ -2,7 +2,7 @@
 
 > A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
-![Version](https://img.shields.io/badge/Version-1.1.0-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.1.1-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
@@ -22,9 +22,12 @@
 
 </details>
 
-## 🆕 What's New in v1.1.0
+## 🆕 What's New
 
-### New "Empty" Status
+### v1.1.1 (Patch Release)
+- Fixed website link text in management section footer
+
+### v1.1.0 - New "Empty" Status
 - Added a new default **"Empty"** status (grey) for untracked time entries
 - **"Not Entered"** status (red) is now specifically for explicitly marked non-entries
 - Status cycle: Empty → Not Entered → Entered → Incorrect
