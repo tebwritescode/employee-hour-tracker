@@ -6,6 +6,7 @@ const session = require('express-session');
 const Json2csvParser = require('json2csv').Parser;
 const path = require('path');
 const backup = require('./backup');
+const packageJson = require('./package.json');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -170,6 +171,10 @@ app.post('/api/logout', (req, res) => {
 
 app.get('/api/check-auth', (req, res) => {
   res.json({ authenticated: !!req.session.authenticated });
+});
+
+app.get('/api/version', (req, res) => {
+  res.json({ version: packageJson.version });
 });
 
 app.post('/api/change-credentials', requireAuth, (req, res) => {
@@ -684,8 +689,10 @@ app.get('/management', (req, res) => {
 });
 
 app.listen(config.port, () => {
+  console.log(`\n🚀 Employee Hour Tracker v${packageJson.version}`);
   console.log(`Server is running on port ${config.port}`);
   console.log('=== Environment Configuration ===');
+  console.log(`VERSION: ${packageJson.version}`);
   console.log(`NODE_ENV: ${config.nodeEnv}`);
   console.log(`PORT: ${config.port}`);
   console.log(`DB_PATH: ${config.dbPath}`);

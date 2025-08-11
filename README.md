@@ -2,7 +2,7 @@
 
 > A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
-![Version](https://img.shields.io/badge/Version-1.1.1-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.2.0-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
@@ -23,6 +23,13 @@
 </details>
 
 ## 🆕 What's New
+
+### v1.2.0 - Live Updates & Improvements
+- **Live Updates**: Real-time synchronization across browsers - changes appear automatically
+- **Version Display**: Application version now shown in server logs and UI footer
+- **Week Navigation Fix**: Fixed date picker showing Tuesday instead of Monday
+- **Improved Data Loading**: Enhanced week-to-week data persistence and loading
+- **Auto-refresh**: Time tracking page refreshes every 5 seconds for live updates
 
 ### v1.1.1 (Patch Release)
 - Fixed website link text in management section footer

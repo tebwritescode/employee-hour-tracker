@@ -71,12 +71,14 @@ Critical configurations for deployment:
 
 ## Important Development Notes
 
-1. **No test suite**: This project currently has no automated tests. Consider adding tests when implementing new features.
+1. **Version Updates**: ALWAYS update the version number in package.json for every change (patch for fixes, minor for features, major for breaking changes). Version is displayed in server logs and UI footer.
 
-2. **Authentication**: Admin authentication is session-based. The requireAuth middleware (server.js:88) protects management endpoints.
+2. **No test suite**: This project currently has no automated tests. Consider adding tests when implementing new features.
 
-3. **Database operations**: All database queries use parameterized statements to prevent SQL injection.
+3. **Authentication**: Admin authentication is session-based. The requireAuth middleware (server.js:88) protects management endpoints.
 
-4. **Static files**: Frontend assets are served from the `public/` directory.
+4. **Database operations**: All database queries use parameterized statements to prevent SQL injection.
 
-5. **Docker deployment**: Use docker-compose.yml for production deployment with persistent volumes for data and backups.
+5. **Static files**: Frontend assets are served from the `public/` directory.
+
+6. **Docker deployment**: Use docker-compose.yml for production deployment with persistent volumes for data and backups. Build multi-arch images using: `docker buildx build --platform linux/amd64,linux/arm64`

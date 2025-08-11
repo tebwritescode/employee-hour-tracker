@@ -5,6 +5,9 @@ class EmployeeTracker {
         this.timeEntries = [];
         this.isAuthenticated = false;
         this.currentDateRange = { start: null, end: null, preset: 'week' };
+        this.autoRefreshInterval = null;
+        this.isUpdating = false;
+        this.currentSection = 'time-tracking';
         
         this.init();
     }
@@ -18,6 +21,45 @@ class EmployeeTracker {
         await this.loadEmployees();
         await this.loadTimeEntries();
         this.checkAuthentication();
+        this.loadVersion();
+        this.startAutoRefresh();
+    }
+    
+    startAutoRefresh() {
+        // Refresh every 5 seconds to show live updates
+        this.autoRefreshInterval = setInterval(() => {
+            if (!this.isUpdating && this.currentSection === 'time-tracking') {
+                this.refreshTimeEntries();
+            }
+        }, 5000);
+    }
+    
+    async refreshTimeEntries() {
+        // Only refresh if we're not currently updating
+        if (this.isUpdating) return;
+        
+        try {
+            const timestamp = new Date().getTime();
+            const response = await fetch(`/api/time-entries/${this.currentWeekStart}?t=${timestamp}`, {
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
+            
+            if (response.ok) {
+                const newEntries = await response.json();
+                
+                // Only update if data has changed
+                if (JSON.stringify(newEntries) !== JSON.stringify(this.timeEntries)) {
+                    this.timeEntries = newEntries;
+                    this.renderTimeGrid();
+                }
+            }
+        } catch (error) {
+            console.error('Error refreshing time entries:', error);
+        }
     }
     
     setupEventListeners() {
@@ -84,6 +126,8 @@ class EmployeeTracker {
         document.getElementById(`${sectionName}-section`).classList.add('active');
         document.getElementById(`${sectionName}-tab`).classList.add('active');
         
+        this.currentSection = sectionName;
+        
         // Update URL without page reload
         const path = sectionName === 'time-tracking' ? '/' : `/${sectionName}`;
         if (window.location.pathname !== path) {
@@ -126,8 +170,9 @@ class EmployeeTracker {
     }
     
     updateWeekDisplay() {
-        const startDate = new Date(this.currentWeekStart);
-        const endDate = new Date(startDate);
+        // Add time component to ensure correct local date parsing
+        const startDate = new Date(this.currentWeekStart + 'T00:00:00');
+        const endDate = new Date(this.currentWeekStart + 'T00:00:00');
         endDate.setDate(startDate.getDate() + 6);
         
         const formatDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -147,7 +192,9 @@ class EmployeeTracker {
     }
     
     setWeek(dateString) {
-        this.currentWeekStart = this.getWeekStart(new Date(dateString));
+        // Ensure proper date parsing by adding time component
+        const selectedDate = new Date(dateString + 'T00:00:00');
+        this.currentWeekStart = this.getWeekStart(selectedDate);
         this.updateWeekDisplay();
         this.loadTimeEntries();
     }
@@ -172,17 +219,30 @@ class EmployeeTracker {
     
     async loadTimeEntries() {
         try {
-            const response = await fetch(`/api/time-entries/${this.currentWeekStart}`, {
+            // Clear existing time entries to ensure fresh data
+            this.timeEntries = [];
+            
+            // Add timestamp to URL to prevent caching
+            const timestamp = new Date().getTime();
+            const response = await fetch(`/api/time-entries/${this.currentWeekStart}?t=${timestamp}`, {
                 headers: {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
                     'Pragma': 'no-cache',
                     'Expires': '0'
                 }
             });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             this.timeEntries = await response.json();
+            console.log('Loaded time entries for week:', this.currentWeekStart, this.timeEntries);
             this.renderTimeGrid();
         } catch (error) {
             console.error('Error loading time entries:', error);
+            this.timeEntries = [];
+            this.renderTimeGrid(); // Still render empty grid
         }
     }
     
@@ -191,6 +251,13 @@ class EmployeeTracker {
         tbody.innerHTML = '';
         
         const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        
+        // Always render based on time entries which includes all employees
+        // The API returns all employees with their time entries via LEFT JOIN
+        if (!this.timeEntries || this.timeEntries.length === 0) {
+            console.log('No time entries to render');
+            return;
+        }
         
         this.timeEntries.forEach(entry => {
             const row = document.createElement('tr');
@@ -243,6 +310,10 @@ class EmployeeTracker {
             return;
         }
         
+        // Prevent updates while one is in progress
+        if (this.isUpdating) return;
+        this.isUpdating = true;
+        
         const statuses = ['Empty', 'Not Entered', 'Entered', 'Incorrect'];
         const currentStatus = button.textContent;
         const currentIndex = statuses.indexOf(currentStatus);
@@ -275,6 +346,8 @@ class EmployeeTracker {
         } catch (error) {
             console.error('Error updating status:', error);
             alert('Error updating time entry');
+        } finally {
+            this.isUpdating = false;
         }
     }
     
@@ -772,6 +845,19 @@ class EmployeeTracker {
             document.getElementById('total-not-entered').textContent = 'Error';
             document.getElementById('total-entered').textContent = 'Error';
             document.getElementById('total-incorrect').textContent = 'Error';
+        }
+    }
+    
+    async loadVersion() {
+        try {
+            const response = await fetch('/api/version');
+            const data = await response.json();
+            const versionEl = document.getElementById('app-version');
+            if (versionEl) {
+                versionEl.textContent = `v${data.version}`;
+            }
+        } catch (error) {
+            console.error('Error loading version:', error);
         }
     }
     
