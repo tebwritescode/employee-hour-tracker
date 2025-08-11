@@ -14,8 +14,9 @@ class EmployeeTracker {
         this.handleDirectRouting();
         await this.loadDefaultWeekSetting();
         this.updateWeekDisplay();
-        this.loadEmployees();
-        this.loadTimeEntries();
+        // Load employees first, then time entries to ensure proper rendering
+        await this.loadEmployees();
+        await this.loadTimeEntries();
         this.checkAuthentication();
     }
     
@@ -112,8 +113,16 @@ class EmployeeTracker {
         const day = d.getDay();
         // Convert Sunday (0) to 7 to make Monday (1) the start of week
         const adjustedDay = day === 0 ? 7 : day;
-        const diff = d.getDate() - adjustedDay + 1; // +1 to get Monday
-        return new Date(d.setDate(diff)).toISOString().split('T')[0];
+        const diff = adjustedDay - 1; // Days since Monday
+        
+        // Create a new date object to avoid modifying the original
+        const monday = new Date(d);
+        monday.setDate(d.getDate() - diff);
+        
+        // Reset time to start of day to avoid timezone issues
+        monday.setHours(0, 0, 0, 0);
+        
+        return monday.toISOString().split('T')[0];
     }
     
     updateWeekDisplay() {
@@ -129,7 +138,8 @@ class EmployeeTracker {
     }
     
     changeWeek(direction) {
-        const currentDate = new Date(this.currentWeekStart);
+        // Parse the current week start and add/subtract 7 days
+        const currentDate = new Date(this.currentWeekStart + 'T00:00:00');
         currentDate.setDate(currentDate.getDate() + (direction * 7));
         this.currentWeekStart = this.getWeekStart(currentDate);
         this.updateWeekDisplay();
@@ -152,7 +162,8 @@ class EmployeeTracker {
                 }
             });
             this.employees = await response.json();
-            this.renderTimeGrid();
+            // Don't render time grid here - let loadTimeEntries handle it
+            // to ensure we always have the correct week's data
             this.renderEmployeesList();
         } catch (error) {
             console.error('Error loading employees:', error);
@@ -232,7 +243,7 @@ class EmployeeTracker {
             return;
         }
         
-        const statuses = ['Not Entered', 'Entered', 'Incorrect'];
+        const statuses = ['Empty', 'Not Entered', 'Entered', 'Incorrect'];
         const currentStatus = button.textContent;
         const currentIndex = statuses.indexOf(currentStatus);
         const nextStatus = statuses[(currentIndex + 1) % statuses.length];
@@ -357,6 +368,7 @@ class EmployeeTracker {
             if (response.ok) {
                 document.getElementById('employee-name').value = '';
                 this.loadEmployees();
+                this.loadTimeEntries(); // Refresh time entries to include new employee
             } else {
                 const data = await response.json();
                 alert(data.error || 'Error adding employee');
@@ -434,6 +446,7 @@ class EmployeeTracker {
             });
             if (response.ok) {
                 this.loadEmployees();
+                this.loadTimeEntries(); // Refresh time entries after employee deletion
             } else {
                 alert('Error deleting employee');
             }
@@ -506,8 +519,9 @@ class EmployeeTracker {
     renderSummaryStats(summary) {
         document.getElementById('total-employees').textContent = summary.total_employees || 0;
         document.getElementById('total-weeks').textContent = summary.total_weeks || 0;
-        document.getElementById('total-entered').textContent = summary.total_entered || 0;
+        document.getElementById('total-empty').textContent = summary.total_empty || 0;
         document.getElementById('total-not-entered').textContent = summary.total_not_entered || 0;
+        document.getElementById('total-entered').textContent = summary.total_entered || 0;
         document.getElementById('total-incorrect').textContent = summary.total_incorrect || 0;
     }
     
@@ -526,14 +540,15 @@ class EmployeeTracker {
         this.overallChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Entered', 'Not Entered', 'Incorrect'],
+                labels: ['Empty', 'Not Entered', 'Entered', 'Incorrect'],
                 datasets: [{
                     data: [
-                        summary.total_entered || 0,
+                        summary.total_empty || 0,
                         summary.total_not_entered || 0,
+                        summary.total_entered || 0,
                         summary.total_incorrect || 0
                     ],
-                    backgroundColor: ['#28a745', '#dc3545', '#fd7e14'],
+                    backgroundColor: ['#6c757d', '#dc3545', '#28a745', '#fd7e14'],
                     borderWidth: 3,
                     borderColor: '#fff'
                 }]
@@ -562,8 +577,9 @@ class EmployeeTracker {
         }
         
         const labels = employeeData.map(emp => emp.name);
-        const enteredData = employeeData.map(emp => emp.entered || 0);
+        const emptyData = employeeData.map(emp => emp.empty || 0);
         const notEnteredData = employeeData.map(emp => emp.not_entered || 0);
+        const enteredData = employeeData.map(emp => emp.entered || 0);
         const incorrectData = employeeData.map(emp => emp.incorrect || 0);
         
         this.employeeChart = new Chart(ctx, {
@@ -572,15 +588,21 @@ class EmployeeTracker {
                 labels,
                 datasets: [
                     {
-                        label: 'Entered',
-                        data: enteredData,
-                        backgroundColor: '#28a745',
+                        label: 'Empty',
+                        data: emptyData,
+                        backgroundColor: '#6c757d',
                         borderWidth: 1
                     },
                     {
                         label: 'Not Entered',
                         data: notEnteredData,
                         backgroundColor: '#dc3545',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Entered',
+                        data: enteredData,
+                        backgroundColor: '#28a745',
                         borderWidth: 1
                     },
                     {
@@ -746,8 +768,9 @@ class EmployeeTracker {
             // Show user-friendly error
             document.getElementById('total-employees').textContent = 'Error';
             document.getElementById('total-weeks').textContent = 'Error';
-            document.getElementById('total-entered').textContent = 'Error';
+            document.getElementById('total-empty').textContent = 'Error';
             document.getElementById('total-not-entered').textContent = 'Error';
+            document.getElementById('total-entered').textContent = 'Error';
             document.getElementById('total-incorrect').textContent = 'Error';
         }
     }
@@ -759,8 +782,9 @@ class EmployeeTracker {
             const offset = parseInt(data.value || 0);
             
             const today = new Date();
-            today.setDate(today.getDate() + (offset * 7));
-            this.currentWeekStart = this.getWeekStart(today);
+            const targetDate = new Date(today);
+            targetDate.setDate(today.getDate() + (offset * 7));
+            this.currentWeekStart = this.getWeekStart(targetDate);
         } catch (error) {
             console.error('Error loading default week setting:', error);
             // Fallback to current week
@@ -801,8 +825,9 @@ class EmployeeTracker {
                 
                 // Update current week immediately
                 const today = new Date();
-                today.setDate(today.getDate() + (parseInt(offset) * 7));
-                this.currentWeekStart = this.getWeekStart(today);
+                const targetDate = new Date(today);
+                targetDate.setDate(today.getDate() + (parseInt(offset) * 7));
+                this.currentWeekStart = this.getWeekStart(targetDate);
                 this.updateWeekDisplay();
                 this.loadTimeEntries();
             } else {
