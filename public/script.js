@@ -123,32 +123,39 @@ class EmployeeTracker {
     }
     
     async shareCurrentView() {
-        const shareURL = this.generateShareURL();
-        
-        if (navigator.share) {
-            // Use native share API if available (mobile)
-            try {
-                await navigator.share({
-                    title: 'Employee Hour Tracker',
-                    text: `View ${this.currentSection === 'time-tracking' ? 'time tracking' : 'analytics'} data`,
-                    url: shareURL
-                });
-            } catch (err) {
-                if (err.name !== 'AbortError') {
-                    this.copyToClipboard(shareURL);
+        try {
+            const shareURL = this.generateShareURL();
+            console.log('Generated share URL:', shareURL);
+            
+            if (navigator.share && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                // Use native share API if available (mobile)
+                try {
+                    await navigator.share({
+                        title: 'Employee Hour Tracker',
+                        text: `View ${this.currentSection === 'time-tracking' ? 'time tracking' : 'analytics'} data`,
+                        url: shareURL
+                    });
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        this.copyToClipboard(shareURL);
+                    }
                 }
+            } else {
+                // Fall back to copying to clipboard
+                this.copyToClipboard(shareURL);
             }
-        } else {
-            // Fall back to copying to clipboard
-            this.copyToClipboard(shareURL);
+        } catch (error) {
+            console.error('Error in shareCurrentView:', error);
+            this.showShareToast('Error generating share link');
         }
     }
     
     copyToClipboard(text) {
-        if (navigator.clipboard) {
+        if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(text).then(() => {
                 this.showShareToast('Link copied to clipboard!');
-            }).catch(() => {
+            }).catch((err) => {
+                console.error('Clipboard API failed:', err);
                 this.fallbackCopyToClipboard(text);
             });
         } else {
@@ -240,8 +247,24 @@ class EmployeeTracker {
         document.getElementById('prev-week').addEventListener('click', () => this.changeWeek(-1));
         document.getElementById('next-week').addEventListener('click', () => this.changeWeek(1));
         document.getElementById('week-picker').addEventListener('change', (e) => this.setWeek(e.target.value));
-        document.getElementById('share-tracker').addEventListener('click', () => this.shareCurrentView());
-        document.getElementById('share-analytics').addEventListener('click', () => this.shareCurrentView());
+        
+        // Add share button listeners with safety checks
+        const shareTracker = document.getElementById('share-tracker');
+        const shareAnalytics = document.getElementById('share-analytics');
+        
+        if (shareTracker) {
+            shareTracker.addEventListener('click', () => {
+                console.log('Share tracker button clicked');
+                this.shareCurrentView();
+            });
+        }
+        
+        if (shareAnalytics) {
+            shareAnalytics.addEventListener('click', () => {
+                console.log('Share analytics button clicked');
+                this.shareCurrentView();
+            });
+        }
         
         document.getElementById('auth-form').addEventListener('submit', (e) => this.handleLogin(e));
         document.getElementById('logout-btn').addEventListener('click', () => this.handleLogout());

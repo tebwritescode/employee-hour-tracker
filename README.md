@@ -2,7 +2,7 @@
 
 > A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
-![Version](https://img.shields.io/badge/Version-1.4.1-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.4.2-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
@@ -23,6 +23,11 @@
 </details>
 
 ## 🆕 What's New
+
+### v1.4.2 - Share Button Fix
+- **Fixed Share Functionality**: Resolved issue where share buttons weren't copying links
+- **Improved Error Handling**: Added better fallback for clipboard operations
+- **Enhanced Debugging**: Added console logging for troubleshooting share issues
 
 ### v1.4.1 - Custom Domain Support for Share Links
 - **BASE_URL Configuration**: Added environment variable to set custom domain for share links
