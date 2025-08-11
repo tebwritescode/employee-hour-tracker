@@ -190,6 +190,16 @@ nav {
     transform: scale(1.05);
 }
 
+.status-empty {
+    background: #6c757d;
+    color: white;
+}
+
+.status-empty:hover {
+    background: #545b62;
+    transform: scale(1.05);
+}
+
 .status-not-entered {
     background: #dc3545;
     color: white;
@@ -338,13 +348,18 @@ nav {
     transform: translateY(-5px);
 }
 
-.stat-card.entered {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+.stat-card.empty {
+    background: linear-gradient(135deg, #6c757d 0%, #868e96 100%);
     color: white;
 }
 
 .stat-card.not-entered {
     background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+    color: white;
+}
+
+.stat-card.entered {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
     color: white;
 }
 

@@ -39,6 +39,54 @@ app.use(session({
 
 const db = new sqlite3.Database(config.dbPath);
 
+// Database migration function for v1.1.0
+function migrateDatabase() {
+  db.serialize(() => {
+    // Check if migration is needed by checking column defaults
+    db.get(`SELECT sql FROM sqlite_master WHERE type='table' AND name='time_entries'`, (err, row) => {
+      if (row && row.sql && row.sql.includes("DEFAULT 'Not Entered'")) {
+        console.log('Migrating database to v1.1.0 - Adding Empty status...');
+        
+        // Create a new table with the updated schema
+        db.run(`CREATE TABLE IF NOT EXISTS time_entries_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          employee_id INTEGER,
+          week_start DATE,
+          monday TEXT DEFAULT 'Empty',
+          tuesday TEXT DEFAULT 'Empty',
+          wednesday TEXT DEFAULT 'Empty',
+          thursday TEXT DEFAULT 'Empty',
+          friday TEXT DEFAULT 'Empty',
+          saturday TEXT DEFAULT 'Empty',
+          sunday TEXT DEFAULT 'Empty',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (employee_id) REFERENCES employees (id),
+          UNIQUE(employee_id, week_start)
+        )`, (err) => {
+          if (!err) {
+            // Copy existing data
+            db.run(`INSERT INTO time_entries_new SELECT * FROM time_entries`, (err) => {
+              if (!err) {
+                // Drop old table and rename new one
+                db.run(`DROP TABLE time_entries`, (err) => {
+                  if (!err) {
+                    db.run(`ALTER TABLE time_entries_new RENAME TO time_entries`, (err) => {
+                      if (!err) {
+                        console.log('Database migration completed successfully!');
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+    });
+  });
+}
+
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS employees (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,13 +98,13 @@ db.serialize(() => {
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     employee_id INTEGER,
     week_start DATE,
-    monday TEXT DEFAULT 'Not Entered',
-    tuesday TEXT DEFAULT 'Not Entered',
-    wednesday TEXT DEFAULT 'Not Entered',
-    thursday TEXT DEFAULT 'Not Entered',
-    friday TEXT DEFAULT 'Not Entered',
-    saturday TEXT DEFAULT 'Not Entered',
-    sunday TEXT DEFAULT 'Not Entered',
+    monday TEXT DEFAULT 'Empty',
+    tuesday TEXT DEFAULT 'Empty',
+    wednesday TEXT DEFAULT 'Empty',
+    thursday TEXT DEFAULT 'Empty',
+    friday TEXT DEFAULT 'Empty',
+    saturday TEXT DEFAULT 'Empty',
+    sunday TEXT DEFAULT 'Empty',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (employee_id) REFERENCES employees (id),
@@ -83,6 +131,11 @@ db.serialize(() => {
   
   // Initialize default settings
   db.run(`INSERT OR IGNORE INTO settings (setting_key, setting_value) VALUES ('default_week_offset', '0')`);
+  
+  // Run migration after tables are created
+  setTimeout(() => {
+    migrateDatabase();
+  }, 1000);
 });
 
 function requireAuth(req, res, next) {
@@ -240,13 +293,13 @@ app.get('/api/time-entries/:weekStart', (req, res) => {
   
   const query = `
     SELECT e.id, e.name, 
-           COALESCE(te.monday, 'Not Entered') as monday,
-           COALESCE(te.tuesday, 'Not Entered') as tuesday,
-           COALESCE(te.wednesday, 'Not Entered') as wednesday,
-           COALESCE(te.thursday, 'Not Entered') as thursday,
-           COALESCE(te.friday, 'Not Entered') as friday,
-           COALESCE(te.saturday, 'Not Entered') as saturday,
-           COALESCE(te.sunday, 'Not Entered') as sunday
+           COALESCE(te.monday, 'Empty') as monday,
+           COALESCE(te.tuesday, 'Empty') as tuesday,
+           COALESCE(te.wednesday, 'Empty') as wednesday,
+           COALESCE(te.thursday, 'Empty') as thursday,
+           COALESCE(te.friday, 'Empty') as friday,
+           COALESCE(te.saturday, 'Empty') as saturday,
+           COALESCE(te.sunday, 'Empty') as sunday
     FROM employees e
     LEFT JOIN time_entries te ON e.id = te.employee_id AND te.week_start = ?
     ORDER BY e.name
@@ -302,6 +355,13 @@ app.get('/api/analytics/summary', (req, res) => {
     SELECT 
       COUNT(DISTINCT e.id) as total_employees,
       COUNT(DISTINCT te.week_start) as total_weeks,
+      SUM(CASE WHEN te.monday = 'Empty' THEN 1 ELSE 0 END +
+          CASE WHEN te.tuesday = 'Empty' THEN 1 ELSE 0 END +
+          CASE WHEN te.wednesday = 'Empty' THEN 1 ELSE 0 END +
+          CASE WHEN te.thursday = 'Empty' THEN 1 ELSE 0 END +
+          CASE WHEN te.friday = 'Empty' THEN 1 ELSE 0 END +
+          CASE WHEN te.saturday = 'Empty' THEN 1 ELSE 0 END +
+          CASE WHEN te.sunday = 'Empty' THEN 1 ELSE 0 END) as total_empty,
       SUM(CASE WHEN te.monday = 'Entered' THEN 1 ELSE 0 END +
           CASE WHEN te.tuesday = 'Entered' THEN 1 ELSE 0 END +
           CASE WHEN te.wednesday = 'Entered' THEN 1 ELSE 0 END +
@@ -358,6 +418,13 @@ app.get('/api/analytics/by-employee', (req, res) => {
   const query = `
     SELECT 
       e.name,
+      SUM(CASE WHEN te.monday = 'Empty' THEN 1 ELSE 0 END +
+          CASE WHEN te.tuesday = 'Empty' THEN 1 ELSE 0 END +
+          CASE WHEN te.wednesday = 'Empty' THEN 1 ELSE 0 END +
+          CASE WHEN te.thursday = 'Empty' THEN 1 ELSE 0 END +
+          CASE WHEN te.friday = 'Empty' THEN 1 ELSE 0 END +
+          CASE WHEN te.saturday = 'Empty' THEN 1 ELSE 0 END +
+          CASE WHEN te.sunday = 'Empty' THEN 1 ELSE 0 END) as empty,
       SUM(CASE WHEN te.monday = 'Entered' THEN 1 ELSE 0 END +
           CASE WHEN te.tuesday = 'Entered' THEN 1 ELSE 0 END +
           CASE WHEN te.wednesday = 'Entered' THEN 1 ELSE 0 END +
