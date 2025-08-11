@@ -2,7 +2,7 @@
 
 > A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
-![Version](https://img.shields.io/badge/Version-1.2.0-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.3.0-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
@@ -23,6 +23,11 @@
 </details>
 
 ## 🆕 What's New
+
+### v1.3.0 - Stability & Documentation
+- **Fixed Cache Issues**: Resolved data persistence when changing weeks (clear browser cache if issues persist)
+- **Enhanced Documentation**: Added version increment rules and testing requirements to CLAUDE.md
+- **Improved Development Workflow**: Established testing protocols before marking features complete
 
 ### v1.2.0 - Live Updates & Improvements
 - **Live Updates**: Real-time synchronization across browsers - changes appear automatically
