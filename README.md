@@ -2,7 +2,7 @@
 
 > A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
-![Version](https://img.shields.io/badge/Version-1.3.0-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.4.0-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
@@ -23,6 +23,16 @@
 </details>
 
 ## 🆕 What's New
+
+### v1.4.0 - URL-based Sharing & Date Ranges
+- **URL Parameter Support**: Navigate directly to specific date ranges via URL parameters
+  - Tracker: `?week=2025-01-06` or `?range=lastweek`
+  - Analytics: `?range=lastmonth`, `?range=last90days`, or `?start=2025-01-01&end=2025-01-31`
+- **Share Functionality**: New share buttons on tracker and analytics pages
+  - Native mobile share support
+  - Automatic clipboard fallback for desktop
+  - Generates shareable URLs with current view parameters
+- **Improved Navigation**: Seamlessly share specific views with team members
 
 ### v1.3.0 - Stability & Documentation
 - **Fixed Cache Issues**: Resolved data persistence when changing weeks (clear browser cache if issues persist)

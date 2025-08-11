@@ -24,6 +24,14 @@
                 <input type="date" id="week-picker">
                 <button id="next-week">&rarr;</button>
                 <span id="week-display"></span>
+                <button id="share-tracker" class="btn btn-share" title="Share this view">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                        <polyline points="16 6 12 2 8 6"></polyline>
+                        <line x1="12" y1="2" x2="12" y2="15"></line>
+                    </svg>
+                    Share
+                </button>
             </div>
 
             <div class="time-grid-container">
@@ -50,6 +58,14 @@
             <div class="analytics-header">
                 <h2>Analytics Dashboard</h2>
                 <div class="export-buttons">
+                    <button id="share-analytics" class="btn btn-share" title="Share this view">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                            <polyline points="16 6 12 2 8 6"></polyline>
+                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                        </svg>
+                        Share
+                    </button>
                     <button id="export-csv" class="btn btn-secondary">Export CSV</button>
                     <button id="export-json" class="btn btn-secondary">Export JSON</button>
                 </div>
@@ -213,7 +229,7 @@
                     <h3>Application Information</h3>
                     <div class="info-grid">
                         <div class="info-item">
-                            <strong>Version:</strong> 1.0.2
+                            <strong>Version:</strong> 1.4.0
                         </div>
                         <div class="info-item">
                             <strong>Created by:</strong> 
@@ -234,7 +250,7 @@
     </div>
 
     <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid #e0e0e0; color: #666; font-size: 14px;">
-        Employee Hour Tracker <span id="app-version">v1.3.0</span> | 
+        Employee Hour Tracker <span id="app-version">v1.4.0</span> | 
         Created by <a href="https://github.com/tebwritescode" target="_blank" style="color: #6f42c1;">tebwritescode</a> | 
         <a href="https://teb.codes" target="_blank" style="color: #6f42c1;">teb.codes</a>
     </footer>
