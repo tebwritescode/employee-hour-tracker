@@ -8,6 +8,7 @@ class EmployeeTracker {
         this.autoRefreshInterval = null;
         this.isUpdating = false;
         this.currentSection = 'time-tracking';
+        this.baseUrl = null; // Will be loaded from server config
         
         this.init();
     }
@@ -16,6 +17,7 @@ class EmployeeTracker {
         this.setupEventListeners();
         this.handleDirectRouting();
         this.parseURLParameters();
+        await this.loadConfig();
         await this.loadDefaultWeekSetting();
         this.updateWeekDisplay();
         // Load employees first, then time entries to ensure proper rendering
@@ -24,6 +26,18 @@ class EmployeeTracker {
         this.checkAuthentication();
         this.loadVersion();
         this.startAutoRefresh();
+    }
+    
+    async loadConfig() {
+        try {
+            const response = await fetch('/api/config');
+            if (response.ok) {
+                const config = await response.json();
+                this.baseUrl = config.baseUrl;
+            }
+        } catch (error) {
+            console.error('Error loading config:', error);
+        }
     }
     
     parseURLParameters() {
@@ -82,7 +96,10 @@ class EmployeeTracker {
     }
     
     generateShareURL() {
-        const baseURL = window.location.origin + window.location.pathname;
+        // Use configured BASE_URL if available, otherwise use current origin
+        const origin = this.baseUrl || window.location.origin;
+        const pathname = window.location.pathname;
+        const baseURL = origin + pathname;
         const params = new URLSearchParams();
         
         if (this.currentSection === 'time-tracking') {
@@ -1008,8 +1025,13 @@ class EmployeeTracker {
             const response = await fetch('/api/version');
             const data = await response.json();
             const versionEl = document.getElementById('app-version');
+            const managementVersionEl = document.getElementById('management-version');
+            
             if (versionEl) {
                 versionEl.textContent = `v${data.version}`;
+            }
+            if (managementVersionEl) {
+                managementVersionEl.textContent = data.version;
             }
         } catch (error) {
             console.error('Error loading version:', error);

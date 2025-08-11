@@ -64,6 +64,7 @@ This is a full-stack Node.js/Express application for tracking employee work hour
 Critical configurations for deployment:
 - `PORT`: Server port (default: 3000)
 - `DB_PATH`: Database file location
+- `BASE_URL`: Custom domain for share links (e.g., `https://cnvrgnc.us`)
 - `SESSION_SECRET`: Session encryption key (change in production!)
 - `DEFAULT_ADMIN_USERNAME/PASSWORD`: Initial admin credentials
 - `BACKUP_INTERVAL_HOURS`: Backup frequency

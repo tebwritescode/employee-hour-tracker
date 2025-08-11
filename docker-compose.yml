@@ -12,6 +12,7 @@ services:
     environment:
       - NODE_ENV=production
       - DB_PATH=/app/data/employee_tracker.db
+      # - BASE_URL=https://example.com  # Set your domain here (e.g., https://cnvrgnc.us)
       - SESSION_SECRET=your-secure-session-secret-change-me-in-production
       - DEFAULT_ADMIN_USERNAME=admin
       - DEFAULT_ADMIN_PASSWORD=b5f7043353882ed784d04d88ed8b17b7
