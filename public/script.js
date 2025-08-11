@@ -15,6 +15,7 @@ class EmployeeTracker {
     async init() {
         this.setupEventListeners();
         this.handleDirectRouting();
+        this.parseURLParameters();
         await this.loadDefaultWeekSetting();
         this.updateWeekDisplay();
         // Load employees first, then time entries to ensure proper rendering
@@ -23,6 +24,158 @@ class EmployeeTracker {
         this.checkAuthentication();
         this.loadVersion();
         this.startAutoRefresh();
+    }
+    
+    parseURLParameters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const range = urlParams.get('range');
+        const week = urlParams.get('week');
+        const start = urlParams.get('start');
+        const end = urlParams.get('end');
+        
+        if (range) {
+            // Handle preset ranges like ?range=lastweek, ?range=lastmonth, ?range=last90days
+            if (range === 'lastweek') {
+                const lastWeek = new Date();
+                lastWeek.setDate(lastWeek.getDate() - 7);
+                this.currentWeekStart = this.getWeekStart(lastWeek);
+                if (window.location.pathname.includes('analytics')) {
+                    this.setDatePreset('week');
+                }
+            } else if (range === 'lastmonth') {
+                if (window.location.pathname.includes('analytics')) {
+                    this.setDatePreset('month');
+                } else {
+                    // For tracker, go to 4 weeks ago
+                    const fourWeeksAgo = new Date();
+                    fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+                    this.currentWeekStart = this.getWeekStart(fourWeeksAgo);
+                }
+            } else if (range === 'last90days' && window.location.pathname.includes('analytics')) {
+                this.setDatePreset('90days');
+            }
+        } else if (week) {
+            // Handle specific week for tracker like ?week=2025-01-06
+            const weekDate = new Date(week + 'T00:00:00');
+            if (!isNaN(weekDate.getTime())) {
+                this.currentWeekStart = this.getWeekStart(weekDate);
+            }
+        } else if (start && end) {
+            // Handle custom date range like ?start=2025-01-01&end=2025-01-31
+            if (window.location.pathname.includes('analytics')) {
+                this.currentDateRange.start = start;
+                this.currentDateRange.end = end;
+                this.currentDateRange.preset = 'custom';
+                // Set the custom date inputs
+                setTimeout(() => {
+                    const startInput = document.getElementById('start-date');
+                    const endInput = document.getElementById('end-date');
+                    if (startInput && endInput) {
+                        startInput.value = start;
+                        endInput.value = end;
+                        this.setDatePreset('custom');
+                        this.applyCustomDateRange();
+                    }
+                }, 100);
+            }
+        }
+    }
+    
+    generateShareURL() {
+        const baseURL = window.location.origin + window.location.pathname;
+        const params = new URLSearchParams();
+        
+        if (this.currentSection === 'time-tracking') {
+            // For tracker page, share the current week
+            params.append('week', this.currentWeekStart);
+        } else if (this.currentSection === 'analytics') {
+            // For analytics page, share the current date range
+            if (this.currentDateRange.preset === 'custom' && this.currentDateRange.start && this.currentDateRange.end) {
+                params.append('start', this.currentDateRange.start);
+                params.append('end', this.currentDateRange.end);
+            } else if (this.currentDateRange.preset === 'week') {
+                params.append('range', 'lastweek');
+            } else if (this.currentDateRange.preset === 'month') {
+                params.append('range', 'lastmonth');
+            } else if (this.currentDateRange.preset === '90days') {
+                params.append('range', 'last90days');
+            }
+        }
+        
+        return params.toString() ? `${baseURL}?${params.toString()}` : baseURL;
+    }
+    
+    async shareCurrentView() {
+        const shareURL = this.generateShareURL();
+        
+        if (navigator.share) {
+            // Use native share API if available (mobile)
+            try {
+                await navigator.share({
+                    title: 'Employee Hour Tracker',
+                    text: `View ${this.currentSection === 'time-tracking' ? 'time tracking' : 'analytics'} data`,
+                    url: shareURL
+                });
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    this.copyToClipboard(shareURL);
+                }
+            }
+        } else {
+            // Fall back to copying to clipboard
+            this.copyToClipboard(shareURL);
+        }
+    }
+    
+    copyToClipboard(text) {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(() => {
+                this.showShareToast('Link copied to clipboard!');
+            }).catch(() => {
+                this.fallbackCopyToClipboard(text);
+            });
+        } else {
+            this.fallbackCopyToClipboard(text);
+        }
+    }
+    
+    fallbackCopyToClipboard(text) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            this.showShareToast('Link copied to clipboard!');
+        } catch (err) {
+            this.showShareToast('Failed to copy link');
+        }
+        document.body.removeChild(textArea);
+    }
+    
+    showShareToast(message) {
+        // Remove any existing toast
+        const existingToast = document.querySelector('.share-toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+        
+        const toast = document.createElement('div');
+        toast.className = 'share-toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        // Animate in
+        setTimeout(() => toast.classList.add('show'), 10);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
     
     startAutoRefresh() {
@@ -70,6 +223,8 @@ class EmployeeTracker {
         document.getElementById('prev-week').addEventListener('click', () => this.changeWeek(-1));
         document.getElementById('next-week').addEventListener('click', () => this.changeWeek(1));
         document.getElementById('week-picker').addEventListener('change', (e) => this.setWeek(e.target.value));
+        document.getElementById('share-tracker').addEventListener('click', () => this.shareCurrentView());
+        document.getElementById('share-analytics').addEventListener('click', () => this.shareCurrentView());
         
         document.getElementById('auth-form').addEventListener('submit', (e) => this.handleLogin(e));
         document.getElementById('logout-btn').addEventListener('click', () => this.handleLogout());
