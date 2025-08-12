@@ -190,6 +190,73 @@
                     <div id="credential-message" class="message"></div>
                 </div>
 
+                <div class="api-tokens-section">
+                    <h3>🔑 API Tokens</h3>
+                    <p>Generate API tokens for external integrations and programmatic access.</p>
+                    
+                    <div class="token-create-form">
+                        <h4>Create New Token</h4>
+                        <form id="create-token-form">
+                            <div class="form-row">
+                                <input type="text" id="token-name" placeholder="Token Name (e.g., 'Integration API')" required>
+                                <input type="date" id="token-expires" title="Leave empty for no expiration">
+                                <button type="submit" class="btn btn-primary">Generate Token</button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div id="new-token-display" class="token-display" style="display: none;">
+                        <h4>⚠️ Save Your Token</h4>
+                        <p><strong>This token will only be shown once. Copy it now:</strong></p>
+                        <div class="token-value">
+                            <input type="text" id="generated-token" readonly>
+                            <button id="copy-token-btn" class="btn btn-secondary">Copy</button>
+                        </div>
+                    </div>
+                    
+                    <div class="existing-tokens">
+                        <h4>Active Tokens</h4>
+                        <div id="tokens-list"></div>
+                    </div>
+                    
+                    <div class="api-docs-info">
+                        <h4>📚 API Documentation</h4>
+                        <p>Complete API documentation with interactive testing is available at:</p>
+                        <div class="code-inline">
+                            <code>/api-docs</code>
+                            <button id="copy-docs-url" class="btn btn-secondary btn-small">Copy URL</button>
+                        </div>
+                        <p><small>Use your API tokens in the X-API-Token header for authenticated requests.</small></p>
+                    </div>
+                    
+                    <div id="token-message" class="message"></div>
+                </div>
+
+                <div class="settings-management">
+                    <h3>⚙️ API Rate Limits</h3>
+                    <p>Configure rate limiting for API requests. Changes take effect immediately.</p>
+                    
+                    <div class="setting-item">
+                        <label for="api-limit-unauthenticated">Unauthenticated requests per minute:</label>
+                        <input type="number" id="api-limit-unauthenticated" class="setting-input" min="1" max="10000" placeholder="100">
+                        <button id="save-unauthenticated-limit" class="btn btn-primary">Save</button>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label for="api-limit-authenticated">Authenticated requests per minute:</label>
+                        <input type="number" id="api-limit-authenticated" class="setting-input" min="1" max="50000" placeholder="1000">
+                        <button id="save-authenticated-limit" class="btn btn-primary">Save</button>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label for="api-limit-window">Rate limit window (minutes):</label>
+                        <input type="number" id="api-limit-window" class="setting-input" min="1" max="60" placeholder="1">
+                        <button id="save-window-limit" class="btn btn-primary">Save</button>
+                    </div>
+                    
+                    <div id="rate-limit-message" class="message"></div>
+                </div>
+
                 <div class="danger-zone">
                     <h3>⚠️ Danger Zone</h3>
                     <p class="danger-warning">The actions below are irreversible and will permanently delete data.</p>

@@ -8,6 +8,7 @@ const path = require('path');
 const backup = require('./backup');
 const packageJson = require('./package.json');
 const VERSION = packageJson.version;
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -137,15 +138,35 @@ function runMigrations() {
         });
       }
     },
-    // Future migrations can be added here
-    // {
-    //   name: 'v1.6.0_example_migration',
-    //   description: 'Example future migration',
-    //   run: (callback) => {
-    //     // Migration logic here
-    //     callback();
-    //   }
-    // }
+    {
+      name: 'v1.6.0_add_api_tokens',
+      description: 'Add API tokens table for external access',
+      run: (callback) => {
+        db.run(`CREATE TABLE IF NOT EXISTS api_tokens (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          token TEXT NOT NULL UNIQUE,
+          name TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          expires_at DATETIME,
+          last_used_at DATETIME,
+          is_active BOOLEAN DEFAULT 1
+        )`, callback);
+      }
+    },
+    {
+      name: 'v1.6.1_add_api_rate_limit_settings',
+      description: 'Add configurable API rate limit settings',
+      run: (callback) => {
+        // Add default API rate limit settings
+        db.run(`INSERT OR IGNORE INTO settings (setting_key, setting_value) VALUES ('api_rate_limit_unauthenticated_per_minute', '100')`, (err1) => {
+          if (err1) return callback(err1);
+          db.run(`INSERT OR IGNORE INTO settings (setting_key, setting_value) VALUES ('api_rate_limit_authenticated_per_minute', '1000')`, (err2) => {
+            if (err2) return callback(err2);
+            db.run(`INSERT OR IGNORE INTO settings (setting_key, setting_value) VALUES ('api_rate_limit_window_minutes', '1')`, callback);
+          });
+        });
+      }
+    }
   ];
   
   // Process migrations sequentially
@@ -247,8 +268,134 @@ db.serialize(() => {
   }, 1000);
 });
 
+// Generate a secure API token
+function generateApiToken() {
+  const crypto = require('crypto');
+  return 'ht_' + crypto.randomBytes(32).toString('hex');
+}
+
+// Middleware to check API token
+function checkApiToken(req, res, next) {
+  const token = req.headers['x-api-token'];
+  
+  if (!token) {
+    return next(); // No token provided, continue to session auth
+  }
+  
+  db.get(
+    `SELECT * FROM api_tokens WHERE token = ? AND is_active = 1`,
+    [token],
+    (err, row) => {
+      if (err) {
+        console.error('Error checking API token:', err);
+        return next();
+      }
+      
+      if (row) {
+        // Check if token is expired
+        if (row.expires_at && new Date(row.expires_at) < new Date()) {
+          return res.status(401).json({ error: 'API token expired' });
+        }
+        
+        // Update last used timestamp
+        db.run(
+          'UPDATE api_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?',
+          [row.id]
+        );
+        
+        req.apiAuthenticated = true;
+        req.apiToken = row;
+      }
+      next();
+    }
+  );
+}
+
+// Rate limiting configuration with dynamic settings
+const createDynamicRateLimiter = (message) => {
+  return rateLimit({
+    windowMs: (req, res) => {
+      // Default to 1 minute if settings not available
+      return req.rateLimitSettings?.windowMs || 60 * 1000;
+    },
+    max: (req, res) => {
+      // Use different limits for authenticated vs unauthenticated requests
+      const authenticated = req.apiToken ? true : false;
+      if (authenticated) {
+        return req.rateLimitSettings?.authenticatedMax || 1000;
+      } else {
+        return req.rateLimitSettings?.unauthenticatedMax || 100;
+      }
+    },
+    message: { error: message },
+    standardHeaders: true,
+    legacyHeaders: false,
+    // Store rate limit info in memory (use Redis for production)
+    keyGenerator: (req) => {
+      // Use API token if available for rate limiting
+      if (req.apiToken) {
+        return `token_${req.apiToken.id}`;
+      }
+      // For IP-based rate limiting, let express-rate-limit handle IPv6 properly
+      return undefined; // This will use the default IP handling
+    }
+  });
+};
+
+// Middleware to load rate limit settings from database
+const loadRateLimitSettings = (req, res, next) => {
+  db.all('SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE "api_rate_limit_%"', (err, rows) => {
+    if (err) {
+      console.error('Error loading rate limit settings:', err);
+      // Use defaults
+      req.rateLimitSettings = {
+        windowMs: 60 * 1000,
+        unauthenticatedMax: 100,
+        authenticatedMax: 1000
+      };
+    } else {
+      const settings = {};
+      rows.forEach(row => {
+        settings[row.setting_key] = row.setting_value;
+      });
+      
+      req.rateLimitSettings = {
+        windowMs: parseInt(settings.api_rate_limit_window_minutes || '1') * 60 * 1000,
+        unauthenticatedMax: parseInt(settings.api_rate_limit_unauthenticated_per_minute || '100'),
+        authenticatedMax: parseInt(settings.api_rate_limit_authenticated_per_minute || '1000')
+      };
+    }
+    next();
+  });
+};
+
+// Default rate limit for all API endpoints
+const apiLimiter = createDynamicRateLimiter('Too many requests, please try again later');
+
+// Static auth rate limiter (doesn't need to be configurable)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minute window
+  max: 5, // limit each IP to 5 login attempts per 15 minutes
+  message: { error: 'Too many login attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Apply API token check to all /api routes
+app.use('/api', checkApiToken);
+
+// Load rate limit settings for all /api routes
+app.use('/api', loadRateLimitSettings);
+
+// Apply rate limiting
+app.use('/api/login', authLimiter);
+app.use('/api/change-credentials', authLimiter);
+
+// Apply dynamic rate limiting to all /api routes (handles both authenticated and unauthenticated)
+app.use('/api', apiLimiter);
+
 function requireAuth(req, res, next) {
-  if (req.session && req.session.authenticated) {
+  if ((req.session && req.session.authenticated) || req.apiAuthenticated) {
     next();
   } else {
     res.status(401).json({ error: 'Authentication required' });
@@ -864,6 +1011,84 @@ app.get('/analytics', (req, res) => {
 
 app.get('/management', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/api-docs', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'api-docs.html'));
+});
+
+// API Token Management Endpoints
+app.post('/api/tokens', requireAuth, (req, res) => {
+  const { name, expires } = req.body;
+  
+  if (!name) {
+    return res.status(400).json({ error: 'Token name is required' });
+  }
+  
+  const token = generateApiToken();
+  const expiresAt = expires ? new Date(expires).toISOString() : null;
+  
+  db.run(
+    `INSERT INTO api_tokens (token, name, expires_at) VALUES (?, ?, ?)`,
+    [token, name, expiresAt],
+    function(err) {
+      if (err) {
+        console.error('Error creating API token:', err);
+        return res.status(500).json({ error: 'Failed to create token' });
+      }
+      
+      res.json({
+        token,
+        name,
+        created: new Date().toISOString(),
+        expires: expiresAt
+      });
+    }
+  );
+});
+
+app.get('/api/tokens', requireAuth, (req, res) => {
+  db.all(
+    `SELECT id, name, created_at, expires_at, last_used_at, is_active 
+     FROM api_tokens 
+     WHERE is_active = 1 
+     ORDER BY created_at DESC`,
+    (err, rows) => {
+      if (err) {
+        console.error('Error fetching tokens:', err);
+        return res.status(500).json({ error: 'Failed to fetch tokens' });
+      }
+      
+      res.json(rows.map(row => ({
+        id: row.id,
+        name: row.name,
+        created: row.created_at,
+        expires: row.expires_at,
+        last_used: row.last_used_at
+      })));
+    }
+  );
+});
+
+app.delete('/api/tokens/:id', requireAuth, (req, res) => {
+  const { id } = req.params;
+  
+  db.run(
+    'UPDATE api_tokens SET is_active = 0 WHERE id = ?',
+    [id],
+    function(err) {
+      if (err) {
+        console.error('Error revoking token:', err);
+        return res.status(500).json({ error: 'Failed to revoke token' });
+      }
+      
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Token not found' });
+      }
+      
+      res.json({ success: true });
+    }
+  );
 });
 
 app.listen(config.port, () => {

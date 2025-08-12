@@ -1,6 +1,6 @@
 {
   "name": "employee-hour-tracker",
-  "version": "1.5.3",
+  "version": "1.6.0",
   "description": "Employee work time tracking system",
   "main": "server.js",
   "scripts": {
@@ -13,6 +13,7 @@
     "chart.js": "^4.5.0",
     "cors": "^2.8.5",
     "express": "^4.18.2",
+    "express-rate-limit": "^8.0.1",
     "express-session": "^1.17.3",
     "json2csv": "^5.0.7",
     "sqlite3": "^5.1.6"
