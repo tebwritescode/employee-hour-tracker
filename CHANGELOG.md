@@ -2,6 +2,29 @@
 
 All notable changes to Employee Hour Tracker are documented here.
 
+## [1.5.3] - 2025-08-12
+### Added
+- **Automatic Session & Cache Management**:
+  - Version-based cache invalidation system
+  - Automatically clears browser cache and sessions on version updates
+  - Works retroactively for existing sessions from older versions
+  - Session version tracking on server side
+  - Client-side version detection and automatic refresh
+  - Prevents stale data issues after deployments
+
+## [1.5.2] - 2025-08-12
+### Added
+- **Comprehensive Database Migration System**:
+  - Automatic migration checks on server startup
+  - Migration tracking table to prevent duplicate runs
+  - Support for seamless upgrades from any version
+  - Safe migration execution with error handling
+### Changed
+- **Include Empty Button**: Improved styling to match other UI buttons
+- **Button Text**: Simplified to "Include Empty" for clarity
+### Fixed
+- **Analytics Filtering**: Works correctly with both preset and custom date ranges
+
 ## [1.5.1] - 2025-08-12
 ### Added
 - **Include All Employees Option**: Checkbox in analytics to show/hide employees with no entries

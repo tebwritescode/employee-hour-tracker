@@ -7,6 +7,7 @@ const Json2csvParser = require('json2csv').Parser;
 const path = require('path');
 const backup = require('./backup');
 const packageJson = require('./package.json');
+const VERSION = packageJson.version;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,9 +36,28 @@ app.use(session({
   cookie: { 
     secure: false, // Always false for development and Docker
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'lax'
   }
 }));
+
+// Version-based session validation middleware
+app.use((req, res, next) => {
+  // Skip version check for static files and version endpoint
+  if (req.path === '/api/version' || !req.path.startsWith('/api/')) {
+    return next();
+  }
+  
+  // If session exists with old version, mark it for client to handle
+  if (req.session && req.session.appVersion && req.session.appVersion !== VERSION) {
+    // Don't destroy here, let the client handle it via /api/version
+    res.setHeader('X-Version-Mismatch', 'true');
+    res.setHeader('X-Current-Version', VERSION);
+    res.setHeader('X-Session-Version', req.session.appVersion);
+  }
+  
+  next();
+});
 
 const db = new sqlite3.Database(config.dbPath);
 
@@ -262,7 +282,26 @@ app.get('/api/check-auth', (req, res) => {
 });
 
 app.get('/api/version', (req, res) => {
-  res.json({ version: packageJson.version });
+  const currentVersion = packageJson.version;
+  const sessionVersion = req.session?.appVersion;
+  const needsRefresh = sessionVersion && sessionVersion !== currentVersion;
+  
+  // Initialize or update session version
+  if (!req.session) {
+    // Create new session if none exists
+    req.session = {};
+  }
+  
+  if (!sessionVersion || sessionVersion !== currentVersion) {
+    req.session.appVersion = currentVersion;
+    req.session.save(); // Explicitly save the session
+  }
+  
+  res.json({ 
+    version: currentVersion,
+    sessionVersion: sessionVersion || null,
+    needsRefresh: needsRefresh 
+  });
 });
 
 app.get('/api/config', (req, res) => {

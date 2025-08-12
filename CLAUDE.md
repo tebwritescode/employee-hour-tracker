@@ -121,12 +121,20 @@ When database schema changes are needed:
 
 3. **No test suite**: This project currently has no automated tests. Consider adding tests when implementing new features.
 
-3. **Authentication**: Admin authentication is session-based. The requireAuth middleware (server.js:88) protects management endpoints.
+4. **Test Data Policy**:
+   - **NEVER include test data in production builds**
+   - Test data scripts (populate-test-data.js) are excluded from Docker images via .dockerignore
+   - Database files (*.db) are never committed to git
+   - The application must handle empty databases gracefully without errors
+   - For local testing, use `node populate-test-data.js` separately
+   - Always test with a clean database before pushing to ensure no errors with empty data
 
-4. **Database operations**: All database queries use parameterized statements to prevent SQL injection.
+5. **Authentication**: Admin authentication is session-based. The requireAuth middleware (server.js:88) protects management endpoints.
 
-5. **Static files**: Frontend assets are served from the `public/` directory.
+6. **Database operations**: All database queries use parameterized statements to prevent SQL injection.
 
-6. **Docker deployment**: Use docker-compose.yml for production deployment with persistent volumes for data and backups. Build multi-arch images using: `docker buildx build --platform linux/amd64,linux/arm64`
+7. **Static files**: Frontend assets are served from the `public/` directory.
+
+8. **Docker deployment**: Use docker-compose.yml for production deployment with persistent volumes for data and backups. Build multi-arch images using: `docker buildx build --platform linux/amd64,linux/arm64`
    - **IMPORTANT**: Docker tags must ALWAYS include the 'v' prefix (e.g., v1.5.2, NOT 1.5.2)
    - Build and push command format: `docker buildx build --platform linux/amd64,linux/arm64 -t tebwritescode/employee-hour-tracker:latest -t tebwritescode/employee-hour-tracker:v1.5.2 --push .`

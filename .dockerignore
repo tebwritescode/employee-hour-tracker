@@ -9,6 +9,10 @@ yarn-error.log*
 *.sqlite
 *.sqlite3
 
+# Test data scripts (not for production)
+populate-test-data.js
+*test-data*
+
 # Environment files
 .env
 .env.local
