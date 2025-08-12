@@ -805,17 +805,32 @@ class EmployeeTracker {
             this.overallChart.destroy();
         }
         
+        // Calculate total and percentages
+        const values = [
+            summary.total_empty || 0,
+            summary.total_not_entered || 0,
+            summary.total_entered || 0,
+            summary.total_incorrect || 0
+        ];
+        const total = values.reduce((sum, val) => sum + val, 0);
+        
+        // Create labels with percentages
+        const labels = [
+            'Empty',
+            'Not Entered',
+            'Entered',
+            'Incorrect'
+        ].map((label, i) => {
+            const percentage = total > 0 ? ((values[i] / total) * 100).toFixed(1) : 0;
+            return `${label} (${percentage}%)`;
+        });
+        
         this.overallChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Empty', 'Not Entered', 'Entered', 'Incorrect'],
+                labels: labels,
                 datasets: [{
-                    data: [
-                        summary.total_empty || 0,
-                        summary.total_not_entered || 0,
-                        summary.total_entered || 0,
-                        summary.total_incorrect || 0
-                    ],
+                    data: values,
                     backgroundColor: ['#6c757d', '#dc3545', '#28a745', '#fd7e14'],
                     borderWidth: 3,
                     borderColor: '#fff'
@@ -830,6 +845,16 @@ class EmployeeTracker {
                         labels: {
                             padding: 20,
                             font: { size: 14 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${value} entries (${percentage}%)`;
+                            }
                         }
                     }
                 }
@@ -953,16 +978,21 @@ class EmployeeTracker {
         
         switch (preset) {
             case 'week':
-                startDate = new Date(today);
-                startDate.setDate(today.getDate() - 7);
-                endDate = new Date(today);
+                // Get the previous full week (Monday to Sunday)
+                const currentWeekStart = this.getWeekStart(today);
+                startDate = new Date(currentWeekStart);
+                startDate.setDate(startDate.getDate() - 7); // Go to previous Monday
+                endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + 6); // Go to that week's Sunday
                 break;
             case 'month':
+                // Last 30 days
                 startDate = new Date(today);
                 startDate.setDate(today.getDate() - 30);
                 endDate = new Date(today);
                 break;
             case '90days':
+                // Last 90 days
                 startDate = new Date(today);
                 startDate.setDate(today.getDate() - 90);
                 endDate = new Date(today);

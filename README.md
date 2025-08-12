@@ -2,7 +2,7 @@
 
 > A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
-![Version](https://img.shields.io/badge/Version-1.4.2-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.5.0-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
@@ -22,49 +22,22 @@
 
 </details>
 
-## 🆕 What's New
+## 🆕 What's New in v1.5.0
 
-### v1.4.2 - Share Button Fix
-- **Fixed Share Functionality**: Resolved issue where share buttons weren't copying links
-- **Improved Error Handling**: Added better fallback for clipboard operations
-- **Enhanced Debugging**: Added console logging for troubleshooting share issues
+### Analytics Accuracy Improvements
+- **Fixed Analytics Calculations**: 
+  - Employee count now correctly shows only employees with entries in the selected date range
+  - Fixed "Last Week" preset to show previous Monday-Sunday (not last 7 days)
+  - Improved query performance with proper JOIN operations
+- **Enhanced Analytics Display**:
+  - Percentages now displayed in pie chart labels for better visualization
+  - Clean count display in summary statistics
+  - Interactive tooltips showing both counts and percentages
+- **Comprehensive Test Data**:
+  - Added test data generation script (`populate-test-data.js`)
+  - Generates 12 weeks of realistic data for thorough testing
 
-### v1.4.1 - Custom Domain Support for Share Links
-- **BASE_URL Configuration**: Added environment variable to set custom domain for share links
-- **Proper HTTPS URLs**: Share links now use your configured domain instead of IP addresses
-- **Docker & Bare Metal Support**: Works with both deployment methods
-
-### v1.4.0 - URL-based Sharing & Date Ranges
-- **URL Parameter Support**: Navigate directly to specific date ranges via URL parameters
-  - Tracker: `?week=2025-01-06` or `?range=lastweek`
-  - Analytics: `?range=lastmonth`, `?range=last90days`, or `?start=2025-01-01&end=2025-01-31`
-- **Share Functionality**: New share buttons on tracker and analytics pages
-  - Native mobile share support
-  - Automatic clipboard fallback for desktop
-  - Generates shareable URLs with current view parameters
-- **Improved Navigation**: Seamlessly share specific views with team members
-
-### v1.3.0 - Stability & Documentation
-- **Fixed Cache Issues**: Resolved data persistence when changing weeks (clear browser cache if issues persist)
-- **Enhanced Documentation**: Added version increment rules and testing requirements to CLAUDE.md
-- **Improved Development Workflow**: Established testing protocols before marking features complete
-
-### v1.2.0 - Live Updates & Improvements
-- **Live Updates**: Real-time synchronization across browsers - changes appear automatically
-- **Version Display**: Application version now shown in server logs and UI footer
-- **Week Navigation Fix**: Fixed date picker showing Tuesday instead of Monday
-- **Improved Data Loading**: Enhanced week-to-week data persistence and loading
-- **Auto-refresh**: Time tracking page refreshes every 5 seconds for live updates
-
-### v1.1.1 (Patch Release)
-- Fixed website link text in management section footer
-
-### v1.1.0 - New "Empty" Status
-- Added a new default **"Empty"** status (grey) for untracked time entries
-- **"Not Entered"** status (red) is now specifically for explicitly marked non-entries
-- Status cycle: Empty → Not Entered → Entered → Incorrect
-- Automatic database migration preserves all existing data
-- Enhanced analytics with Empty status tracking
+[View Full Changelog](CHANGELOG.md)
 
 ## ✨ Features
 
