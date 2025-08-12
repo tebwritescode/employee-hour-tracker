@@ -365,7 +365,7 @@ app.get('/api/analytics/summary', (req, res) => {
   
   const query = `
     SELECT 
-      COUNT(DISTINCT e.id) as total_employees,
+      COUNT(DISTINCT te.employee_id) as total_employees,
       COUNT(DISTINCT te.week_start) as total_weeks,
       SUM(CASE WHEN te.monday = 'Empty' THEN 1 ELSE 0 END +
           CASE WHEN te.tuesday = 'Empty' THEN 1 ELSE 0 END +
@@ -395,8 +395,7 @@ app.get('/api/analytics/summary', (req, res) => {
           CASE WHEN te.friday = 'Incorrect' THEN 1 ELSE 0 END +
           CASE WHEN te.saturday = 'Incorrect' THEN 1 ELSE 0 END +
           CASE WHEN te.sunday = 'Incorrect' THEN 1 ELSE 0 END) as total_incorrect
-    FROM employees e
-    LEFT JOIN time_entries te ON e.id = te.employee_id
+    FROM time_entries te
     ${dateFilter}
   `;
   
@@ -430,36 +429,36 @@ app.get('/api/analytics/by-employee', (req, res) => {
   const query = `
     SELECT 
       e.name,
-      SUM(CASE WHEN te.monday = 'Empty' THEN 1 ELSE 0 END +
+      COALESCE(SUM(CASE WHEN te.monday = 'Empty' THEN 1 ELSE 0 END +
           CASE WHEN te.tuesday = 'Empty' THEN 1 ELSE 0 END +
           CASE WHEN te.wednesday = 'Empty' THEN 1 ELSE 0 END +
           CASE WHEN te.thursday = 'Empty' THEN 1 ELSE 0 END +
           CASE WHEN te.friday = 'Empty' THEN 1 ELSE 0 END +
           CASE WHEN te.saturday = 'Empty' THEN 1 ELSE 0 END +
-          CASE WHEN te.sunday = 'Empty' THEN 1 ELSE 0 END) as empty,
-      SUM(CASE WHEN te.monday = 'Entered' THEN 1 ELSE 0 END +
+          CASE WHEN te.sunday = 'Empty' THEN 1 ELSE 0 END), 0) as empty,
+      COALESCE(SUM(CASE WHEN te.monday = 'Entered' THEN 1 ELSE 0 END +
           CASE WHEN te.tuesday = 'Entered' THEN 1 ELSE 0 END +
           CASE WHEN te.wednesday = 'Entered' THEN 1 ELSE 0 END +
           CASE WHEN te.thursday = 'Entered' THEN 1 ELSE 0 END +
           CASE WHEN te.friday = 'Entered' THEN 1 ELSE 0 END +
           CASE WHEN te.saturday = 'Entered' THEN 1 ELSE 0 END +
-          CASE WHEN te.sunday = 'Entered' THEN 1 ELSE 0 END) as entered,
-      SUM(CASE WHEN te.monday = 'Not Entered' THEN 1 ELSE 0 END +
+          CASE WHEN te.sunday = 'Entered' THEN 1 ELSE 0 END), 0) as entered,
+      COALESCE(SUM(CASE WHEN te.monday = 'Not Entered' THEN 1 ELSE 0 END +
           CASE WHEN te.tuesday = 'Not Entered' THEN 1 ELSE 0 END +
           CASE WHEN te.wednesday = 'Not Entered' THEN 1 ELSE 0 END +
           CASE WHEN te.thursday = 'Not Entered' THEN 1 ELSE 0 END +
           CASE WHEN te.friday = 'Not Entered' THEN 1 ELSE 0 END +
           CASE WHEN te.saturday = 'Not Entered' THEN 1 ELSE 0 END +
-          CASE WHEN te.sunday = 'Not Entered' THEN 1 ELSE 0 END) as not_entered,
-      SUM(CASE WHEN te.monday = 'Incorrect' THEN 1 ELSE 0 END +
+          CASE WHEN te.sunday = 'Not Entered' THEN 1 ELSE 0 END), 0) as not_entered,
+      COALESCE(SUM(CASE WHEN te.monday = 'Incorrect' THEN 1 ELSE 0 END +
           CASE WHEN te.tuesday = 'Incorrect' THEN 1 ELSE 0 END +
           CASE WHEN te.wednesday = 'Incorrect' THEN 1 ELSE 0 END +
           CASE WHEN te.thursday = 'Incorrect' THEN 1 ELSE 0 END +
           CASE WHEN te.friday = 'Incorrect' THEN 1 ELSE 0 END +
           CASE WHEN te.saturday = 'Incorrect' THEN 1 ELSE 0 END +
-          CASE WHEN te.sunday = 'Incorrect' THEN 1 ELSE 0 END) as incorrect
+          CASE WHEN te.sunday = 'Incorrect' THEN 1 ELSE 0 END), 0) as incorrect
     FROM employees e
-    LEFT JOIN time_entries te ON e.id = te.employee_id
+    INNER JOIN time_entries te ON e.id = te.employee_id
     ${dateFilter}
     GROUP BY e.id, e.name
     ORDER BY e.name
