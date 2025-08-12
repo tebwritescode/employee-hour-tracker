@@ -2,7 +2,7 @@
 
 > A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
-![Version](https://img.shields.io/badge/Version-1.5.0-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.5.1-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
@@ -22,20 +22,14 @@
 
 </details>
 
-## 🆕 What's New in v1.5.0
+## 🆕 What's New in v1.5.1
 
-### Analytics Accuracy Improvements
-- **Fixed Analytics Calculations**: 
-  - Employee count now correctly shows only employees with entries in the selected date range
-  - Fixed "Last Week" preset to show previous Monday-Sunday (not last 7 days)
-  - Improved query performance with proper JOIN operations
-- **Enhanced Analytics Display**:
-  - Percentages now displayed in pie chart labels for better visualization
-  - Clean count display in summary statistics
-  - Interactive tooltips showing both counts and percentages
-- **Comprehensive Test Data**:
-  - Added test data generation script (`populate-test-data.js`)
-  - Generates 12 weeks of realistic data for thorough testing
+### Analytics Inclusion Options
+- **Include All Employees Option**: Added checkbox to include/exclude employees with no entries
+  - Checkbox is checked by default to show all employees
+  - When checked: Shows all employees in the system, even those with no time entries
+  - When unchecked: Shows only employees who have entries in the selected date range
+- **Improved Analytics Flexibility**: Choose between comprehensive view (all employees) or focused view (active employees only)
 
 [View Full Changelog](CHANGELOG.md)
 

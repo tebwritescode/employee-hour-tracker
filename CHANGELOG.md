@@ -2,6 +2,13 @@
 
 All notable changes to Employee Hour Tracker are documented here.
 
+## [1.5.1] - 2025-08-12
+### Added
+- **Include All Employees Option**: Checkbox in analytics to show/hide employees with no entries
+  - Checked by default for comprehensive view
+  - Shows all employees when checked, only active employees when unchecked
+- **Analytics Flexibility**: Choose between viewing all employees or only those with data
+
 ## [1.5.0] - 2025-08-12
 ### Fixed
 - **Analytics Calculations**: 

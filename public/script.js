@@ -281,6 +281,12 @@ class EmployeeTracker {
         document.getElementById('preset-custom').addEventListener('click', () => this.setDatePreset('custom'));
         document.getElementById('apply-date-range').addEventListener('click', () => this.applyCustomDateRange());
         
+        // Add listener for include all employees checkbox
+        const includeAllCheckbox = document.getElementById('include-all-employees');
+        if (includeAllCheckbox) {
+            includeAllCheckbox.addEventListener('change', () => this.loadAnalytics());
+        }
+        
         document.getElementById('delete-confirmation').addEventListener('input', (e) => this.handleDeleteConfirmationInput(e));
         document.getElementById('delete-all-data-btn').addEventListener('click', () => this.handleDeleteAllData());
         
@@ -1033,9 +1039,20 @@ class EmployeeTracker {
     
     async loadAnalytics() {
         try {
-            const queryParams = this.currentDateRange.start && this.currentDateRange.end 
+            // Check if we should include all employees
+            const includeAllCheckbox = document.getElementById('include-all-employees');
+            const includeAll = includeAllCheckbox ? includeAllCheckbox.checked : true;
+            
+            let queryParams = this.currentDateRange.start && this.currentDateRange.end 
                 ? `?startDate=${this.currentDateRange.start}&endDate=${this.currentDateRange.end}`
-                : '';
+                : '?';
+            
+            // Add includeAll parameter
+            if (queryParams === '?') {
+                queryParams += `includeAll=${includeAll}`;
+            } else {
+                queryParams += `&includeAll=${includeAll}`;
+            }
                 
             console.log('Loading analytics with params:', queryParams);
             
