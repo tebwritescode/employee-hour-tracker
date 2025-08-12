@@ -42,51 +42,138 @@ app.use(session({
 const db = new sqlite3.Database(config.dbPath);
 
 // Database migration function for v1.1.0
+// Comprehensive database migration system
 function migrateDatabase() {
-  db.serialize(() => {
-    // Check if migration is needed by checking column defaults
-    db.get(`SELECT sql FROM sqlite_master WHERE type='table' AND name='time_entries'`, (err, row) => {
-      if (row && row.sql && row.sql.includes("DEFAULT 'Not Entered'")) {
-        console.log('Migrating database to v1.1.0 - Adding Empty status...');
-        
-        // Create a new table with the updated schema
-        db.run(`CREATE TABLE IF NOT EXISTS time_entries_new (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          employee_id INTEGER,
-          week_start DATE,
-          monday TEXT DEFAULT 'Empty',
-          tuesday TEXT DEFAULT 'Empty',
-          wednesday TEXT DEFAULT 'Empty',
-          thursday TEXT DEFAULT 'Empty',
-          friday TEXT DEFAULT 'Empty',
-          saturday TEXT DEFAULT 'Empty',
-          sunday TEXT DEFAULT 'Empty',
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (employee_id) REFERENCES employees (id),
-          UNIQUE(employee_id, week_start)
-        )`, (err) => {
-          if (!err) {
-            // Copy existing data
-            db.run(`INSERT INTO time_entries_new SELECT * FROM time_entries`, (err) => {
-              if (!err) {
+  console.log('🔄 Checking for database migrations...');
+  
+  // Create migrations table if it doesn't exist
+  db.run(`CREATE TABLE IF NOT EXISTS migrations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    migration_name TEXT UNIQUE,
+    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`, (err) => {
+    if (err) {
+      console.error('Error creating migrations table:', err);
+      return;
+    }
+    
+    // Run all migrations in order
+    runMigrations();
+  });
+}
+
+function runMigrations() {
+  const migrations = [
+    {
+      name: 'v1.1.0_add_empty_status',
+      description: 'Change default from Not Entered to Empty',
+      run: (callback) => {
+        // Check if this migration is needed
+        db.get(`SELECT sql FROM sqlite_master WHERE type='table' AND name='time_entries'`, (err, row) => {
+          if (err) return callback(err);
+          
+          if (row && row.sql && row.sql.includes("DEFAULT 'Not Entered'")) {
+            console.log('📦 Running migration: v1.1.0 - Adding Empty status...');
+            
+            // Create new table with updated schema
+            db.run(`CREATE TABLE IF NOT EXISTS time_entries_new (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              employee_id INTEGER,
+              week_start DATE,
+              monday TEXT DEFAULT 'Empty',
+              tuesday TEXT DEFAULT 'Empty',
+              wednesday TEXT DEFAULT 'Empty',
+              thursday TEXT DEFAULT 'Empty',
+              friday TEXT DEFAULT 'Empty',
+              saturday TEXT DEFAULT 'Empty',
+              sunday TEXT DEFAULT 'Empty',
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY (employee_id) REFERENCES employees (id),
+              UNIQUE(employee_id, week_start)
+            )`, (err) => {
+              if (err) return callback(err);
+              
+              // Copy existing data
+              db.run(`INSERT INTO time_entries_new SELECT * FROM time_entries`, (err) => {
+                if (err) return callback(err);
+                
                 // Drop old table and rename new one
                 db.run(`DROP TABLE time_entries`, (err) => {
-                  if (!err) {
-                    db.run(`ALTER TABLE time_entries_new RENAME TO time_entries`, (err) => {
-                      if (!err) {
-                        console.log('Database migration completed successfully!');
-                      }
-                    });
-                  }
+                  if (err) return callback(err);
+                  
+                  db.run(`ALTER TABLE time_entries_new RENAME TO time_entries`, (err) => {
+                    if (err) return callback(err);
+                    console.log('✅ Migration v1.1.0 completed successfully!');
+                    callback();
+                  });
                 });
-              }
+              });
             });
+          } else {
+            // Migration not needed or already applied
+            callback();
           }
         });
       }
+    },
+    // Future migrations can be added here
+    // {
+    //   name: 'v1.6.0_example_migration',
+    //   description: 'Example future migration',
+    //   run: (callback) => {
+    //     // Migration logic here
+    //     callback();
+    //   }
+    // }
+  ];
+  
+  // Process migrations sequentially
+  let index = 0;
+  
+  function processNextMigration() {
+    if (index >= migrations.length) {
+      console.log('✅ All database migrations completed!');
+      return;
+    }
+    
+    const migration = migrations[index];
+    
+    // Check if migration has already been applied
+    db.get('SELECT * FROM migrations WHERE migration_name = ?', [migration.name], (err, row) => {
+      if (err) {
+        console.error(`Error checking migration ${migration.name}:`, err);
+        index++;
+        processNextMigration();
+        return;
+      }
+      
+      if (row) {
+        // Migration already applied
+        index++;
+        processNextMigration();
+      } else {
+        // Run the migration
+        console.log(`🔧 Running migration: ${migration.name} - ${migration.description}`);
+        migration.run((err) => {
+          if (err) {
+            console.error(`Error running migration ${migration.name}:`, err);
+          } else {
+            // Record migration as applied
+            db.run('INSERT INTO migrations (migration_name) VALUES (?)', [migration.name], (err) => {
+              if (err) {
+                console.error(`Error recording migration ${migration.name}:`, err);
+              }
+            });
+          }
+          index++;
+          processNextMigration();
+        });
+      }
     });
-  });
+  }
+  
+  processNextMigration();
 }
 
 db.serialize(() => {

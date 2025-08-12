@@ -70,6 +70,41 @@ Critical configurations for deployment:
 - `BACKUP_INTERVAL_HOURS`: Backup frequency
 - `NODE_ENV`: development/production mode
 
+## Database Migrations
+
+**CRITICAL**: The application includes a comprehensive database migration system that runs automatically on startup.
+
+### How Database Migrations Work
+1. **Automatic Migration Checks**: On every server start, the system checks for pending migrations
+2. **Migration Tracking**: A `migrations` table tracks which migrations have been applied
+3. **Sequential Execution**: Migrations run in order, ensuring proper schema evolution
+4. **Version Compatibility**: Users can safely upgrade from ANY previous version to the latest
+
+### Adding New Migrations
+
+When database schema changes are needed:
+
+1. Add a new migration object to the `migrations` array in `server.js:runMigrations()`
+2. Follow this structure:
+```javascript
+{
+  name: 'v1.X.0_description',
+  description: 'Human-readable description',
+  run: (callback) => {
+    // Migration logic here
+    // MUST call callback() on success or callback(err) on failure
+  }
+}
+```
+
+### Current Migrations
+- **v1.1.0_add_empty_status**: Changes default status from 'Not Entered' to 'Empty'
+
+### Testing Migrations
+- Test upgrading from oldest version to newest
+- Test fresh installations
+- Test re-running server (migrations should be idempotent)
+
 ## Important Development Notes
 
 1. **Version Updates**: 
@@ -82,6 +117,7 @@ Critical configurations for deployment:
    - ALWAYS test functionality with curl commands before marking tasks complete
    - Test data persistence across week changes
    - Verify changes work in the actual running application
+   - Test database migrations from older versions
 
 3. **No test suite**: This project currently has no automated tests. Consider adding tests when implementing new features.
 

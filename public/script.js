@@ -9,6 +9,7 @@ class EmployeeTracker {
         this.isUpdating = false;
         this.currentSection = 'time-tracking';
         this.baseUrl = null; // Will be loaded from server config
+        this.includeAllEmployees = true; // Default to including all employees
         
         this.init();
     }
@@ -281,10 +282,10 @@ class EmployeeTracker {
         document.getElementById('preset-custom').addEventListener('click', () => this.setDatePreset('custom'));
         document.getElementById('apply-date-range').addEventListener('click', () => this.applyCustomDateRange());
         
-        // Add listener for include all employees checkbox
-        const includeAllCheckbox = document.getElementById('include-all-employees');
-        if (includeAllCheckbox) {
-            includeAllCheckbox.addEventListener('change', () => this.loadAnalytics());
+        // Add listener for include empty button toggle
+        const toggleIncludeBtn = document.getElementById('toggle-include-empty');
+        if (toggleIncludeBtn) {
+            toggleIncludeBtn.addEventListener('click', () => this.toggleIncludeEmpty());
         }
         
         document.getElementById('delete-confirmation').addEventListener('input', (e) => this.handleDeleteConfirmationInput(e));
@@ -1037,11 +1038,26 @@ class EmployeeTracker {
         this.loadAnalytics();
     }
     
+    toggleIncludeEmpty() {
+        this.includeAllEmployees = !this.includeAllEmployees;
+        const btn = document.getElementById('toggle-include-empty');
+        const icon = document.getElementById('include-empty-icon');
+        
+        if (this.includeAllEmployees) {
+            btn.classList.add('active');
+            icon.textContent = '✓';
+        } else {
+            btn.classList.remove('active');
+            icon.textContent = '';
+        }
+        
+        this.loadAnalytics();
+    }
+    
     async loadAnalytics() {
         try {
-            // Check if we should include all employees
-            const includeAllCheckbox = document.getElementById('include-all-employees');
-            const includeAll = includeAllCheckbox ? includeAllCheckbox.checked : true;
+            // Use the stored includeAllEmployees state
+            const includeAll = this.includeAllEmployees;
             
             let queryParams = this.currentDateRange.start && this.currentDateRange.end 
                 ? `?startDate=${this.currentDateRange.start}&endDate=${this.currentDateRange.end}`
