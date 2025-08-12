@@ -15,6 +15,9 @@ class EmployeeTracker {
     }
     
     async init() {
+        // Check version first to handle any necessary refreshes
+        await this.loadVersion();
+        
         this.setupEventListeners();
         this.handleDirectRouting();
         this.parseURLParameters();
@@ -25,7 +28,6 @@ class EmployeeTracker {
         await this.loadEmployees();
         await this.loadTimeEntries();
         this.checkAuthentication();
-        this.loadVersion();
         this.startAutoRefresh();
     }
     
@@ -457,7 +459,20 @@ class EmployeeTracker {
         // Always render based on time entries which includes all employees
         // The API returns all employees with their time entries via LEFT JOIN
         if (!this.timeEntries || this.timeEntries.length === 0) {
-            console.log('No time entries to render');
+            // Show helpful message for empty database
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = 8;
+            cell.className = 'empty-state-message';
+            cell.style.textAlign = 'center';
+            cell.style.padding = '2rem';
+            cell.style.color = '#666';
+            cell.innerHTML = `
+                <div style="font-size: 1.1rem; margin-bottom: 0.5rem;">No employees found</div>
+                <div style="font-size: 0.9rem;">Add employees in the Management section to get started</div>
+            `;
+            row.appendChild(cell);
+            tbody.appendChild(row);
             return;
         }
         
@@ -761,6 +776,20 @@ class EmployeeTracker {
     renderEmployeesList() {
         const container = document.getElementById('employees-container');
         container.innerHTML = '';
+        
+        if (this.employees.length === 0) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'empty-state-message';
+            emptyDiv.style.textAlign = 'center';
+            emptyDiv.style.padding = '2rem';
+            emptyDiv.style.color = '#666';
+            emptyDiv.innerHTML = `
+                <div style="font-size: 1.1rem; margin-bottom: 0.5rem;">No employees yet</div>
+                <div style="font-size: 0.9rem;">Use the form above to add your first employee</div>
+            `;
+            container.appendChild(emptyDiv);
+            return;
+        }
         
         this.employees.forEach(employee => {
             const div = document.createElement('div');
@@ -1112,6 +1141,41 @@ class EmployeeTracker {
             const data = await response.json();
             const versionEl = document.getElementById('app-version');
             const managementVersionEl = document.getElementById('management-version');
+            
+            // Check if we have a stored version in localStorage
+            const storedVersion = localStorage.getItem('appVersion');
+            
+            // If version changed or needs refresh, clear everything and reload
+            if (storedVersion && storedVersion !== data.version) {
+                console.log(`Version mismatch detected: ${storedVersion} -> ${data.version}`);
+                // Clear all client-side storage
+                localStorage.clear();
+                sessionStorage.clear();
+                // Clear cookies (we can't directly clear httpOnly cookies from JS, but we can clear others)
+                document.cookie.split(";").forEach(c => {
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                });
+                // Store new version
+                localStorage.setItem('appVersion', data.version);
+                // Force reload to get fresh session
+                window.location.reload(true);
+                return;
+            }
+            
+            // Store current version if not already stored
+            if (!storedVersion) {
+                localStorage.setItem('appVersion', data.version);
+            }
+            
+            // Check if server says we need to refresh (for retroactive fixes)
+            if (data.needsRefresh) {
+                console.log('Server indicates session needs refresh');
+                localStorage.clear();
+                sessionStorage.clear();
+                localStorage.setItem('appVersion', data.version);
+                window.location.reload(true);
+                return;
+            }
             
             if (versionEl) {
                 versionEl.textContent = `v${data.version}`;

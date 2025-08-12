@@ -2,7 +2,7 @@
 
 > A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
-![Version](https://img.shields.io/badge/Version-1.5.1-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.5.3-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
@@ -22,14 +22,15 @@
 
 </details>
 
-## 🆕 What's New in v1.5.1
+## 🆕 What's New in v1.5.3
 
-### Analytics Inclusion Options
-- **Include All Employees Option**: Added checkbox to include/exclude employees with no entries
-  - Checkbox is checked by default to show all employees
-  - When checked: Shows all employees in the system, even those with no time entries
-  - When unchecked: Shows only employees who have entries in the selected date range
-- **Improved Analytics Flexibility**: Choose between comprehensive view (all employees) or focused view (active employees only)
+### Automatic Session & Cache Management
+- **Version-Based Cache Invalidation**: Automatically clears browser cache and sessions when app version changes
+  - Prevents stale data issues after updates
+  - Works retroactively for existing sessions from older versions
+  - Seamless user experience - automatic refresh when needed
+- **Session Version Tracking**: Server tracks session versions to ensure compatibility
+- **Client-Side Version Detection**: Browser automatically detects version changes and refreshes
 
 [View Full Changelog](CHANGELOG.md)
 
