@@ -302,6 +302,31 @@ class EmployeeTracker {
         document.getElementById('clear-period-confirmation').addEventListener('input', (e) => this.handleClearPeriodConfirmationInput(e));
         document.getElementById('clear-period-btn').addEventListener('click', () => this.handleClearPeriodData());
         
+        // API Token management event listeners
+        document.getElementById('create-token-form').addEventListener('submit', (e) => this.handleCreateToken(e));
+        document.getElementById('copy-token-btn').addEventListener('click', () => this.copyGeneratedToken());
+        document.getElementById('copy-docs-url').addEventListener('click', () => this.copyDocsUrl());
+        
+        // Use event delegation for revoke buttons since they're dynamically added
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('revoke-token-btn')) {
+                const tokenId = e.target.getAttribute('data-token-id');
+                const tokenName = e.target.getAttribute('data-token-name');
+                this.revokeToken(tokenId, tokenName);
+            }
+        });
+        
+        // API Rate Limit management event listeners
+        document.getElementById('save-unauthenticated-limit').addEventListener('click', () => {
+            this.saveApiRateLimitSetting('api_rate_limit_unauthenticated_per_minute', 'api-limit-unauthenticated', 'save-unauthenticated-limit');
+        });
+        document.getElementById('save-authenticated-limit').addEventListener('click', () => {
+            this.saveApiRateLimitSetting('api_rate_limit_authenticated_per_minute', 'api-limit-authenticated', 'save-authenticated-limit');
+        });
+        document.getElementById('save-window-limit').addEventListener('click', () => {
+            this.saveApiRateLimitSetting('api_rate_limit_window_minutes', 'api-limit-window', 'save-window-limit');
+        });
+        
         // Handle browser back/forward navigation
         window.addEventListener('popstate', () => this.handleDirectRouting());
     }
@@ -577,6 +602,11 @@ class EmployeeTracker {
             this.isAuthenticated = data.authenticated;
             this.updateManagementUI();
             this.updateTimeGridButtons();
+            
+            // Load API tokens if authenticated
+            if (this.isAuthenticated) {
+                this.loadApiTokens();
+            }
         } catch (error) {
             console.error('Error checking authentication:', error);
         }
@@ -590,6 +620,8 @@ class EmployeeTracker {
             loginForm.style.display = 'none';
             managementContent.style.display = 'block';
             this.loadEmployees();
+            this.loadApiTokens();
+            this.loadApiRateLimits();
         } else {
             loginForm.style.display = 'block';
             managementContent.style.display = 'none';
@@ -1540,8 +1572,247 @@ class EmployeeTracker {
             messageDiv.className = 'message';
         }, 5000);
     }
+    
+    // API Token Management Methods
+    async handleCreateToken(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('token-name').value;
+        const expires = document.getElementById('token-expires').value;
+        const messageDiv = document.getElementById('token-message');
+        
+        try {
+            const response = await fetch('/api/tokens', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, expires })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Show the generated token
+                document.getElementById('generated-token').value = data.token;
+                document.getElementById('new-token-display').style.display = 'block';
+                
+                // Clear the form
+                document.getElementById('create-token-form').reset();
+                
+                // Refresh the tokens list
+                this.loadApiTokens();
+                
+                messageDiv.textContent = 'Token created successfully!';
+                messageDiv.className = 'message success';
+                
+                // Scroll to the token display
+                document.getElementById('new-token-display').scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            } else {
+                messageDiv.textContent = data.error || 'Error creating token';
+                messageDiv.className = 'message error';
+            }
+        } catch (error) {
+            console.error('Error creating token:', error);
+            messageDiv.textContent = 'Error creating token';
+            messageDiv.className = 'message error';
+        }
+        
+        setTimeout(() => {
+            messageDiv.textContent = '';
+            messageDiv.className = 'message';
+        }, 5000);
+    }
+    
+    async loadApiTokens() {
+        try {
+            const response = await fetch('/api/tokens');
+            const tokens = await response.json();
+            
+            const tokensContainer = document.getElementById('tokens-list');
+            
+            if (response.ok && tokens.length > 0) {
+                tokensContainer.innerHTML = tokens.map(token => `
+                    <div class="token-item">
+                        <div class="token-info">
+                            <strong>${this.escapeHtml(token.name)}</strong>
+                            <small>
+                                Created: ${new Date(token.created).toLocaleDateString()} | 
+                                ${token.expires ? `Expires: ${new Date(token.expires).toLocaleDateString()}` : 'No expiration'} |
+                                ${token.last_used ? `Last used: ${new Date(token.last_used).toLocaleDateString()}` : 'Never used'}
+                            </small>
+                        </div>
+                        <div class="token-actions">
+                            <button class="btn btn-danger btn-small revoke-token-btn" data-token-id="${token.id}" data-token-name="${token.name}">
+                                Revoke
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                tokensContainer.innerHTML = '<div class="empty-tokens">No active tokens</div>';
+            }
+        } catch (error) {
+            console.error('Error loading tokens:', error);
+            document.getElementById('tokens-list').innerHTML = '<div class="empty-tokens">Error loading tokens</div>';
+        }
+    }
+    
+    async revokeToken(tokenId, tokenName) {
+        if (!confirm(`Are you sure you want to revoke the token "${tokenName}"? This action cannot be undone.`)) {
+            return;
+        }
+        
+        const messageDiv = document.getElementById('token-message');
+        
+        try {
+            const response = await fetch(`/api/tokens/${tokenId}`, {
+                method: 'DELETE'
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                messageDiv.textContent = `Token "${tokenName}" revoked successfully`;
+                messageDiv.className = 'message success';
+                this.loadApiTokens(); // Refresh the list
+            } else {
+                messageDiv.textContent = data.error || 'Error revoking token';
+                messageDiv.className = 'message error';
+            }
+        } catch (error) {
+            console.error('Error revoking token:', error);
+            messageDiv.textContent = 'Error revoking token';
+            messageDiv.className = 'message error';
+        }
+        
+        setTimeout(() => {
+            messageDiv.textContent = '';
+            messageDiv.className = 'message';
+        }, 5000);
+    }
+    
+    copyGeneratedToken() {
+        const tokenInput = document.getElementById('generated-token');
+        tokenInput.select();
+        tokenInput.setSelectionRange(0, 99999); // For mobile devices
+        
+        navigator.clipboard.writeText(tokenInput.value).then(() => {
+            const button = document.getElementById('copy-token-btn');
+            const originalText = button.textContent;
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+                button.textContent = originalText;
+            }, 2000);
+        }).catch(() => {
+            // Fallback for older browsers
+            document.execCommand('copy');
+            const button = document.getElementById('copy-token-btn');
+            const originalText = button.textContent;
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+                button.textContent = originalText;
+            }, 2000);
+        });
+    }
+    
+    copyDocsUrl() {
+        const url = window.location.origin + '/api-docs';
+        navigator.clipboard.writeText(url).then(() => {
+            const button = document.getElementById('copy-docs-url');
+            const originalText = button.textContent;
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+                button.textContent = originalText;
+            }, 2000);
+        }).catch(() => {
+            // Fallback
+            const button = document.getElementById('copy-docs-url');
+            const originalText = button.textContent;
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+                button.textContent = originalText;
+            }, 2000);
+        });
+    }
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    async loadApiRateLimits() {
+        try {
+            const [unauthResponse, authResponse, windowResponse] = await Promise.all([
+                fetch('/api/settings/api_rate_limit_unauthenticated_per_minute'),
+                fetch('/api/settings/api_rate_limit_authenticated_per_minute'),
+                fetch('/api/settings/api_rate_limit_window_minutes')
+            ]);
+
+            const unauthData = await unauthResponse.json();
+            const authData = await authResponse.json();
+            const windowData = await windowResponse.json();
+
+            document.getElementById('api-limit-unauthenticated').value = unauthData.value || '100';
+            document.getElementById('api-limit-authenticated').value = authData.value || '1000';
+            document.getElementById('api-limit-window').value = windowData.value || '1';
+        } catch (error) {
+            console.error('Error loading API rate limits:', error);
+        }
+    }
+
+    async saveApiRateLimitSetting(settingKey, inputId, buttonId) {
+        const input = document.getElementById(inputId);
+        const button = document.getElementById(buttonId);
+        const messageDiv = document.getElementById('rate-limit-message');
+        
+        const value = input.value;
+        if (!value || isNaN(value) || parseInt(value) < 1) {
+            messageDiv.textContent = 'Please enter a valid positive number';
+            messageDiv.className = 'message error';
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent = 'Saving...';
+
+        try {
+            const response = await fetch(`/api/settings/${settingKey}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ value: value })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                messageDiv.textContent = 'Rate limit setting saved successfully!';
+                messageDiv.className = 'message success';
+            } else {
+                messageDiv.textContent = data.error || 'Error saving setting';
+                messageDiv.className = 'message error';
+            }
+        } catch (error) {
+            console.error('Error saving API rate limit setting:', error);
+            messageDiv.textContent = 'Error saving setting';
+            messageDiv.className = 'message error';
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Save';
+            setTimeout(() => {
+                messageDiv.textContent = '';
+                messageDiv.className = 'message';
+            }, 3000);
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new EmployeeTracker();
+    window.tracker = new EmployeeTracker();
 });

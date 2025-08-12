@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Hour Tracker - API Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .api-tester {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .api-tester h2 {
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background: #5a6fd8;
+        }
+        
+        .response {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .response pre {
+            white-space: pre-wrap;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+        }
+        
+        .endpoints {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .endpoint-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .endpoint-card h3 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .method {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        
+        .method.get { background: #28a745; color: white; }
+        .method.post { background: #007bff; color: white; }
+        .method.put { background: #ffc107; color: #212529; }
+        .method.delete { background: #dc3545; color: white; }
+        
+        .code-block {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 0.5rem 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+        }
+        
+        .nav {
+            position: sticky;
+            top: 0;
+            background: white;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+        
+        .nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .nav li {
+            margin: 0 1rem;
+        }
+        
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .nav a:hover {
+            text-decoration: underline;
+        }
+        
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 60vh;
+        }
+        
+        .auth-form {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .auth-form h2 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        
+        .auth-form input {
+            width: 100%;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        .auth-form button {
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .main-content {
+            display: none;
+        }
+        
+        .main-content.authenticated {
+            display: block;
+        }
+        
+        .token-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+        
+        .token-info strong {
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>API Documentation</h1>
+            <p>Employee Hour Tracker RESTful API v1.6.0</p>
+        </div>
+        
+        <div class="auth-container" id="auth-container">
+            <div class="auth-form">
+                <h2>🔐 Authentication Required</h2>
+                <p>Please login with your management credentials to access the API documentation.</p>
+                <form id="login-form">
+                    <input type="text" id="username" placeholder="Username" required>
+                    <input type="password" id="password" placeholder="Password" required>
+                    <button type="submit" class="btn">Login</button>
+                </form>
+                <div id="login-error" class="error-message"></div>
+            </div>
+        </div>
+        
+        <div class="main-content" id="main-content">
+        <nav class="nav">
+            <ul>
+                <li><a href="#tester">API Tester</a></li>
+                <li><a href="#auth">Authentication</a></li>
+                <li><a href="#employees">Employees</a></li>
+                <li><a href="#time-entries">Time Entries</a></li>
+                <li><a href="#analytics">Analytics</a></li>
+                <li><a href="#tokens">API Tokens</a></li>
+                <li><a href="#rate-limits">Rate Limits</a></li>
+            </ul>
+        </nav>
+        
+        <div class="api-tester" id="tester">
+            <h2>🧪 API Tester</h2>
+            <p>Test API endpoints directly from this page.</p>
+            
+            <div class="token-info">
+                <strong>API Token:</strong> Include your API token in the X-API-Token header for authenticated requests.
+            </div>
+            
+            <div class="form-group">
+                <label for="endpoint">Endpoint</label>
+                <select id="endpoint">
+                    <option value="GET:/api/version">GET /api/version</option>
+                    <option value="GET:/api/employees">GET /api/employees</option>
+                    <option value="POST:/api/employees">POST /api/employees</option>
+                    <option value="GET:/api/analytics/summary">GET /api/analytics/summary</option>
+                    <option value="GET:/api/tokens">GET /api/tokens</option>
+                    <option value="POST:/api/tokens">POST /api/tokens</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="apiToken">API Token (optional)</label>
+                <input type="text" id="apiToken" placeholder="ht_your_api_token_here">
+            </div>
+            
+            <div class="form-group" id="bodyGroup" style="display: none;">
+                <label for="requestBody">Request Body (JSON)</label>
+                <textarea id="requestBody" rows="4" placeholder="{}"></textarea>
+            </div>
+            
+            <div class="form-group" id="paramsGroup">
+                <label for="queryParams">Query Parameters</label>
+                <input type="text" id="queryParams" placeholder="start=2025-01-01&end=2025-01-31">
+            </div>
+            
+            <button onclick="testEndpoint()">Send Request</button>
+            
+            <div id="response" class="response" style="display: none;">
+                <h4>Response:</h4>
+                <pre id="responseContent"></pre>
+            </div>
+        </div>
+        
+        <div class="endpoints">
+            <div class="endpoint-card" id="auth">
+                <h3>🔐 Authentication</h3>
+                
+                <div style="margin-bottom: 1rem;">
+                    <span class="method post">POST</span>
+                    <strong>/api/login</strong>
+                </div>
+                <p>Authenticate with username and password.</p>
+                <div class="code-block">
+{
+  "username": "admin",
+  "password": "admin123"
+}
+                </div>
+                
+                <div style="margin: 1rem 0;">
+                    <span class="method get">GET</span>
+                    <strong>/api/check-auth</strong>
+                </div>
+                <p>Check authentication status.</p>
+            </div>
+            
+            <div class="endpoint-card" id="employees">
+                <h3>👥 Employee Management</h3>
+                
+                <div style="margin-bottom: 1rem;">
+                    <span class="method get">GET</span>
+                    <strong>/api/employees</strong>
+                </div>
+                <p>Get all employees.</p>
+                
+                <div style="margin: 1rem 0;">
+                    <span class="method post">POST</span>
+                    <strong>/api/employees</strong>
+                    <small style="color: #dc3545;">🔒 Auth Required</small>
+                </div>
+                <p>Add new employee.</p>
+                <div class="code-block">
+{
+  "name": "John Doe"
+}
+                </div>
+                
+                <div style="margin: 1rem 0;">
+                    <span class="method put">PUT</span>
+                    <strong>/api/employees/:id</strong>
+                    <small style="color: #dc3545;">🔒 Auth Required</small>
+                </div>
+                <p>Update employee name.</p>
+                
+                <div style="margin: 1rem 0;">
+                    <span class="method delete">DELETE</span>
+                    <strong>/api/employees/:id</strong>
+                    <small style="color: #dc3545;">🔒 Auth Required</small>
+                </div>
+                <p>Delete employee.</p>
+            </div>
+            
+            <div class="endpoint-card" id="time-entries">
+                <h3>⏰ Time Entries</h3>
+                
+                <div style="margin-bottom: 1rem;">
+                    <span class="method get">GET</span>
+                    <strong>/api/time-entries/:weekStart</strong>
+                </div>
+                <p>Get time entries for a specific week (weekStart must be Monday).</p>
+                
+                <div style="margin: 1rem 0;">
+                    <span class="method post">POST</span>
+                    <strong>/api/time-entries</strong>
+                    <small style="color: #dc3545;">🔒 Auth Required</small>
+                </div>
+                <p>Update time entry status.</p>
+                <div class="code-block">
+{
+  "employeeId": 1,
+  "weekStart": "2025-01-13",
+  "day": "monday",
+  "status": "Entered"
+}
+                </div>
+                
+                <p><strong>Valid Status Values:</strong></p>
+                <ul style="margin-left: 1rem;">
+                    <li><code>Empty</code> - No work scheduled</li>
+                    <li><code>Not Entered</code> - Time not entered</li>
+                    <li><code>Entered</code> - Time entered correctly</li>
+                    <li><code>Incorrect</code> - Time entered incorrectly</li>
+                </ul>
+            </div>
+            
+            <div class="endpoint-card" id="analytics">
+                <h3>📊 Analytics</h3>
+                
+                <div style="margin-bottom: 1rem;">
+                    <span class="method get">GET</span>
+                    <strong>/api/analytics/summary</strong>
+                </div>
+                <p>Get summary statistics.</p>
+                <p><strong>Query Parameters:</strong></p>
+                <ul style="margin-left: 1rem;">
+                    <li><code>start</code> - Start date (YYYY-MM-DD)</li>
+                    <li><code>end</code> - End date (YYYY-MM-DD)</li>
+                    <li><code>includeAll</code> - Include employees with no entries (true/false)</li>
+                </ul>
+                
+                <div style="margin: 1rem 0;">
+                    <span class="method get">GET</span>
+                    <strong>/api/analytics/by-employee</strong>
+                </div>
+                <p>Get per-employee analytics.</p>
+                
+                <div style="margin: 1rem 0;">
+                    <span class="method get">GET</span>
+                    <strong>/api/export/:format</strong>
+                </div>
+                <p>Export data (csv, json, excel).</p>
+            </div>
+            
+            <div class="endpoint-card" id="tokens">
+                <h3>🔑 API Tokens</h3>
+                
+                <div style="margin-bottom: 1rem;">
+                    <span class="method post">POST</span>
+                    <strong>/api/tokens</strong>
+                    <small style="color: #dc3545;">🔒 Auth Required</small>
+                </div>
+                <p>Generate new API token.</p>
+                <div class="code-block">
+{
+  "name": "Integration Token",
+  "expires": "2025-12-31"
+}
+                </div>
+                
+                <div style="margin: 1rem 0;">
+                    <span class="method get">GET</span>
+                    <strong>/api/tokens</strong>
+                    <small style="color: #dc3545;">🔒 Auth Required</small>
+                </div>
+                <p>List all active API tokens.</p>
+                
+                <div style="margin: 1rem 0;">
+                    <span class="method delete">DELETE</span>
+                    <strong>/api/tokens/:id</strong>
+                    <small style="color: #dc3545;">🔒 Auth Required</small>
+                </div>
+                <p>Revoke API token.</p>
+            </div>
+            
+            <div class="endpoint-card" id="rate-limits">
+                <h3>⚡ Rate Limits</h3>
+                
+                <p><strong>Default Limits:</strong></p>
+                <ul style="margin-left: 1rem; margin-bottom: 1rem;">
+                    <li><strong>Unauthenticated:</strong> 100 requests/minute per IP</li>
+                    <li><strong>API Token:</strong> 1000 requests/minute per token</li>
+                    <li><strong>Auth endpoints:</strong> 5 attempts per 15 minutes</li>
+                </ul>
+                
+                <p><strong>Rate limit headers:</strong></p>
+                <div class="code-block">
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1640995200
+                </div>
+                
+                <p><strong>Rate limit exceeded response:</strong></p>
+                <div class="code-block">
+{
+  "error": "Too many requests, please try again later"
+}
+                </div>
+            </div>
+        </div>
+        </div> <!-- End main-content -->
+    </div>
+    
+    <script>
+        // Authentication handling
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthentication();
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+        });
+        
+        async function checkAuthentication() {
+            try {
+                const response = await fetch('/api/check-auth');
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    showMainContent();
+                } else {
+                    showAuthForm();
+                }
+            } catch (error) {
+                console.error('Error checking authentication:', error);
+                showAuthForm();
+            }
+        }
+        
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('login-error');
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showMainContent();
+                } else {
+                    errorDiv.textContent = 'Invalid credentials';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorDiv.textContent = 'Login failed';
+            }
+        }
+        
+        function showMainContent() {
+            document.getElementById('auth-container').style.display = 'none';
+            document.getElementById('main-content').classList.add('authenticated');
+        }
+        
+        function showAuthForm() {
+            document.getElementById('auth-container').style.display = 'flex';
+            document.getElementById('main-content').classList.remove('authenticated');
+        }
+
+        const endpointSelect = document.getElementById('endpoint');
+        const bodyGroup = document.getElementById('bodyGroup');
+        const paramsGroup = document.getElementById('paramsGroup');
+        const requestBody = document.getElementById('requestBody');
+        
+        // Show/hide body input based on method
+        endpointSelect.addEventListener('change', function() {
+            const value = this.value;
+            const method = value.split(':')[0];
+            
+            if (method === 'POST' || method === 'PUT') {
+                bodyGroup.style.display = 'block';
+                
+                // Set default body based on endpoint
+                if (value.includes('/employees')) {
+                    requestBody.value = '{\n  "name": "John Doe"\n}';
+                } else if (value.includes('/tokens')) {
+                    requestBody.value = '{\n  "name": "Test Token",\n  "expires": "2025-12-31"\n}';
+                } else if (value.includes('/time-entries')) {
+                    requestBody.value = '{\n  "employeeId": 1,\n  "weekStart": "2025-01-13",\n  "day": "monday",\n  "status": "Entered"\n}';
+                }
+            } else {
+                bodyGroup.style.display = 'none';
+            }
+            
+            // Set default query params
+            if (value.includes('analytics')) {
+                document.getElementById('queryParams').value = 'start=2025-01-01&end=2025-01-31&includeAll=true';
+            } else if (value.includes('export')) {
+                document.getElementById('queryParams').value = 'start=2025-01-01&end=2025-01-31';
+            } else {
+                document.getElementById('queryParams').value = '';
+            }
+        });
+        
+        async function testEndpoint() {
+            const endpointValue = document.getElementById('endpoint').value;
+            const [method, path] = endpointValue.split(':');
+            const apiToken = document.getElementById('apiToken').value;
+            const queryParams = document.getElementById('queryParams').value;
+            const body = document.getElementById('requestBody').value;
+            
+            let url = path;
+            if (queryParams) {
+                url += '?' + queryParams;
+            }
+            
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            if (apiToken) {
+                headers['X-API-Token'] = apiToken;
+            }
+            
+            const options = {
+                method,
+                headers
+            };
+            
+            if ((method === 'POST' || method === 'PUT') && body) {
+                try {
+                    JSON.parse(body); // Validate JSON
+                    options.body = body;
+                } catch (e) {
+                    document.getElementById('responseContent').textContent = 'Invalid JSON in request body';
+                    document.getElementById('response').style.display = 'block';
+                    return;
+                }
+            }
+            
+            try {
+                const response = await fetch(url, options);
+                const responseData = await response.text();
+                
+                let formattedResponse = `Status: ${response.status} ${response.statusText}\n\n`;
+                
+                // Show rate limit headers
+                const rateLimitHeaders = ['x-ratelimit-limit', 'x-ratelimit-remaining', 'x-ratelimit-reset'];
+                rateLimitHeaders.forEach(header => {
+                    const value = response.headers.get(header);
+                    if (value) {
+                        formattedResponse += `${header}: ${value}\n`;
+                    }
+                });
+                
+                formattedResponse += '\n';
+                
+                try {
+                    const jsonData = JSON.parse(responseData);
+                    formattedResponse += JSON.stringify(jsonData, null, 2);
+                } catch (e) {
+                    formattedResponse += responseData;
+                }
+                
+                document.getElementById('responseContent').textContent = formattedResponse;
+                document.getElementById('response').style.display = 'block';
+            } catch (error) {
+                document.getElementById('responseContent').textContent = 'Error: ' + error.message;
+                document.getElementById('response').style.display = 'block';
+            }
+        }
+        
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('.nav a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

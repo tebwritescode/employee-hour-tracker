@@ -2,7 +2,7 @@
 
 > A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
-![Version](https://img.shields.io/badge/Version-1.5.3-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.6.0-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
@@ -22,15 +22,27 @@
 
 </details>
 
-## 🆕 What's New in v1.5.3
+## 🆕 What's New in v1.6.0
 
-### Automatic Session & Cache Management
-- **Version-Based Cache Invalidation**: Automatically clears browser cache and sessions when app version changes
-  - Prevents stale data issues after updates
-  - Works retroactively for existing sessions from older versions
-  - Seamless user experience - automatic refresh when needed
-- **Session Version Tracking**: Server tracks session versions to ensure compatibility
-- **Client-Side Version Detection**: Browser automatically detects version changes and refreshes
+### 🚀 Complete API Platform
+- **API Token Authentication**: Generate secure API tokens for external integrations
+  - Token-based authentication for programmatic access
+  - Configurable expiration dates
+  - Token management interface in web UI
+- **Interactive API Documentation**: Built-in API explorer at `/api-docs`
+  - Test endpoints directly from your browser
+  - Complete API reference with examples
+  - Real-time request/response testing
+- **Advanced Rate Limiting**: Intelligent rate limiting system
+  - 100 req/min for unauthenticated users
+  - 1000 req/min for API token holders
+  - Stricter limits for authentication endpoints
+  - Rate limit headers for client optimization
+- **Comprehensive API Coverage**: RESTful API for all functionality
+  - Employee management
+  - Time entry operations
+  - Analytics and reporting
+  - Data export in multiple formats
 
 [View Full Changelog](CHANGELOG.md)
 

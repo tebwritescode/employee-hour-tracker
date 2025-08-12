@@ -2,6 +2,33 @@
 
 All notable changes to Employee Hour Tracker are documented here.
 
+## [1.6.0] - 2025-08-12
+### Added
+- **Complete API Platform**:
+  - API Token authentication system for external integrations
+  - Secure token generation with configurable expiration dates
+  - Token management interface in web UI
+  - Interactive API documentation page at `/api-docs`
+  - Real-time API endpoint testing interface
+  - Comprehensive API reference with examples
+- **Advanced Rate Limiting**:
+  - Intelligent rate limiting based on authentication status
+  - 100 requests/minute for unauthenticated users
+  - 1000 requests/minute for API token holders
+  - Stricter limits (5/15min) for authentication endpoints
+  - Rate limit headers for client optimization
+- **RESTful API Coverage**:
+  - Complete employee management via API
+  - Time entry operations with validation
+  - Analytics and reporting endpoints
+  - Data export in multiple formats (CSV, JSON, Excel)
+  - Settings management API
+  - Danger zone operations for data management
+### Enhanced
+- **Database Architecture**: New api_tokens table with migration system
+- **Security**: Multi-layer authentication (session + token based)
+- **Documentation**: Complete API documentation with interactive testing
+
 ## [1.5.3] - 2025-08-12
 ### Added
 - **Automatic Session & Cache Management**:
