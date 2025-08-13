@@ -22,68 +22,45 @@ class EmployeeTracker {
     async init() {
         console.log('🚀 Starting EmployeeTracker initialization...');
         
-        // Set up basic UI first - always do this regardless of async operations
-        try {
-            this.setupEventListeners();
-            console.log('✅ Event listeners set up successfully');
-        } catch (e) {
-            console.error('❌ Failed to setup event listeners:', e);
-        }
+        // CRITICAL: Set up event listeners first - this is what makes buttons work
+        this.setupEventListeners();
+        console.log('✅ Event listeners set up');
         
         this.handleDirectRouting();
         
-        // Initialize with minimal required data, load rest in background
-        try {
-            // Set basic defaults
-            this.currentWeekStart = this.getWeekStart(new Date());
-            this.appTimezone = 'America/New_York';
-            
-            console.log('✅ Basic initialization complete, loading data in background...');
-            
-            // Load data in background without blocking UI
-            this.loadDataInBackground();
-            
-        } catch (error) {
-            console.error('❌ Critical initialization failed:', error);
-            // Even if everything fails, ensure we have minimal functionality
-            this.currentWeekStart = this.getWeekStart(new Date());
-            this.appTimezone = 'America/New_York';
-        }
+        // Set basic fallback values immediately
+        this.currentWeekStart = this.getWeekStart(new Date());
+        this.appTimezone = 'America/New_York';
         
-        console.log('🎉 EmployeeTracker initialization complete');
-    }
-    
-    async loadDataInBackground() {
+        // Load data step by step, but don't break if any step fails
         try {
-            // Load config with fallback
-            await Promise.race([
-                this.loadConfig(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Config timeout')), 5000))
-            ]).catch(() => console.warn('Config load failed, using defaults'));
+            await this.loadConfig();
+            await this.loadTimezoneSettings(); 
+            await this.loadVersion();
             
-            // Load other data in parallel
-            const results = await Promise.allSettled([
-                this.loadVersion(),
-                this.loadTimezoneSettings(),
-                this.parseURLParameters(),
-                this.loadCurrentWeekFromServer(),
-                this.loadDefaultWeekSetting(),
-                this.loadEmployees()
-            ]);
+            // Try to get current week from server
+            try {
+                await this.loadCurrentWeekFromServer();
+                console.log('✅ Server week loaded:', this.currentWeekStart);
+            } catch (error) {
+                console.warn('Server week load failed, using fallback');
+            }
             
-            // Update display after data loads
             await this.updateWeekDisplay();
+            await this.loadEmployees();
             await this.loadTimeEntries();
+            await this.parseURLParameters();
             
-            // Initialize auth and auto-refresh
             this.checkAuthentication();
             this.startAutoRefresh();
             
-            console.log('✅ Background data loading complete');
         } catch (error) {
-            console.error('❌ Background loading failed:', error);
+            console.warn('Some initialization failed, but buttons should still work:', error);
         }
+        
+        console.log('🎉 EmployeeTracker ready - buttons should be functional');
     }
+    
     
     async loadConfig() {
         try {
