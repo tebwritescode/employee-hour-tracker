@@ -2,7 +2,7 @@
 
 > A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
-![Version](https://img.shields.io/badge/Version-1.6.7-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.6.16-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
@@ -22,14 +22,31 @@
 
 </details>
 
-## 🆕 What's New in v1.6.7
+## 🆕 What's New in v1.6.16 - STABLE RELEASE
 
-### 🔧 Configurable Debug Logging
-- **NEW**: Environment variable `ENABLE_DEBUG_LOGS=true` to enable/disable debug logging
-- **IMPROVED**: Strategic debug logging for navigation and timezone troubleshooting
-- **ENHANCED**: Server-side and client-side debug logging can be controlled independently
+### 🔧 Critical Fixes & Improvements
+- **FIXED**: JavaScript syntax errors preventing application loading
+- **ENHANCED**: Clear debug status indicators in server logs (`DEBUG_LOGS: 🐛 ENABLED/❌ DISABLED`)
+- **IMPROVED**: Robust initialization system with proper error handling
+- **TESTED**: Comprehensive automated testing for all navigation functionality
+- **STABLE**: Ready for production deployment with full timezone safety
 
-## Previous Release - v1.6.6
+## ⚠️ KNOWN ISSUES - Under Investigation
+
+### 🌏 Philippines Timezone Navigation Issue
+**Status**: Under active investigation  
+**Affected Users**: Specific workstations in Philippines timezone (Asia/Manila)  
+**Symptoms**:
+- ✅ Previous week navigation works correctly
+- ❌ Next week navigation button may not respond  
+- ❌ Monday calendar selection from current week may fail
+- ✅ Other weekdays from same week work normally
+
+**Workaround**: Use calendar to select Tuesday from the desired week, then navigate as needed.  
+**Investigation**: Issue is isolated to specific client workstations and does not affect the majority of users.  
+**Debug**: Enable debug logging with `ENABLE_DEBUG_LOGS=true` for detailed troubleshooting.
+
+## Previous Major Releases
 
 ### 🕐 Critical Timezone & Navigation Fixes
 - **FIXED**: Multi-timezone data separation bug where users in different timezones saw different data  
