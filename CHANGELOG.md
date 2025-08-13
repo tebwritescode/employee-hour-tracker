@@ -2,6 +2,60 @@
 
 All notable changes to Employee Hour Tracker are documented here.
 
+## [1.6.7] - 2025-08-13
+### Added
+- **Configurable Debug Logging**: Environment variable `ENABLE_DEBUG_LOGS=true` to enable/disable debug logging
+- **Strategic Debug Points**: Key navigation and timezone troubleshooting logs
+- **Client/Server Debug Sync**: Debug settings synchronized between server and client
+### Enhanced
+- **Troubleshooting**: Easier diagnosis of navigation and timezone issues in production
+
+## [1.6.6] - 2025-08-13
+### Fixed
+- **CRITICAL**: Multi-timezone data separation bug where users in different timezones saw different data
+- **Week Navigation**: Arrow buttons not working on specific client computers
+- **Calendar Selection**: Monday date selection inconsistencies on certain workstations
+### Added
+- **Server-Side Navigation**: All week calculations now performed server-side for 100% consistency
+- **Universal Compatibility**: Resolves timezone-related issues across all client environments
+### UPGRADE NOTICE
+- **⚠️ IMPORTANT**: This version fixes critical timezone bugs. Users on v1.6.5 and earlier should upgrade immediately.
+
+## [1.6.5] - 2025-08-13
+### Fixed
+- **Navigation Issues**: Improved week navigation consistency
+- **Client Compatibility**: Enhanced browser compatibility for date calculations
+### UPGRADE NOTICE
+- **⚠️ TIMEZONE ISSUES PRESENT**: This version still contains timezone bugs. **Upgrade to v1.6.6 or later immediately**.
+
+## [1.6.4] - 2025-08-13
+### Enhanced
+- **Docker Deployment**: Improved version management and deployment consistency
+- **Production Builds**: Enhanced build process for version tracking
+### UPGRADE NOTICE
+- **⚠️ TIMEZONE ISSUES PRESENT**: This version contains timezone bugs. **Upgrade to v1.6.6 or later immediately**.
+
+## [1.6.3] - 2025-08-13
+### Added
+- **Global Timezone Setting**: Application-wide timezone configuration (defaulted to Eastern Time)
+- **Timezone Migration**: Database migration v1.6.3 for timezone consistency
+### Fixed
+- **Initial Timezone Fix**: Attempted resolution of multi-timezone data separation
+### UPGRADE NOTICE
+- **⚠️ INCOMPLETE FIX**: This version's timezone fix was incomplete. **Upgrade to v1.6.6 or later for complete resolution**.
+
+## [1.6.2] - 2025-08-13
+### Enhanced
+- **Version Management**: Improved version tracking and deployment processes
+### UPGRADE NOTICE
+- **⚠️ TIMEZONE ISSUES PRESENT**: This version contains timezone bugs. **Upgrade to v1.6.6 or later immediately**.
+
+## [1.6.1] - 2025-08-13
+### Enhanced
+- **Bug Investigation**: Added comprehensive debugging tools for timezone issue diagnosis
+### UPGRADE NOTICE
+- **⚠️ TIMEZONE ISSUES PRESENT**: This version contains timezone bugs. **Upgrade to v1.6.6 or later immediately**.
+
 ## [1.6.0] - 2025-08-12
 ### Added
 - **Complete API Platform**:

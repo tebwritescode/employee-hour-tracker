@@ -21,8 +21,16 @@ const config = {
   defaultAdminUsername: process.env.DEFAULT_ADMIN_USERNAME || 'admin',
   defaultAdminPassword: process.env.DEFAULT_ADMIN_PASSWORD || 'admin123',
   nodeEnv: process.env.NODE_ENV || 'development',
-  baseUrl: process.env.BASE_URL || null // If not set, frontend will use window.location.origin
+  baseUrl: process.env.BASE_URL || null, // If not set, frontend will use window.location.origin
+  enableDebugLogs: process.env.ENABLE_DEBUG_LOGS === 'true' // Default false unless explicitly enabled
 };
+
+// Debug logging function
+function debugLog(...args) {
+  if (config.enableDebugLogs) {
+    console.log('🐛 DEBUG:', ...args);
+  }
+}
 
 app.use(cors({
   credentials: true,
@@ -173,6 +181,24 @@ function runMigrations() {
       run: (callback) => {
         // Add application timezone setting with default to Eastern Time
         db.run(`INSERT OR IGNORE INTO settings (setting_key, setting_value) VALUES ('app_timezone', 'America/New_York')`, callback);
+      }
+    },
+    {
+      name: 'v1.6.5_timezone_fix_complete',
+      description: 'Timezone calculation moved to server-side for consistency',
+      run: (callback) => {
+        // This migration marks completion of timezone fix - server-side week calculation now active
+        console.log('✅ v1.6.5: Server-side week calculation active - timezone issues resolved');
+        callback();
+      }
+    },
+    {
+      name: 'v1.6.6_navigation_fix_complete',
+      description: 'Week navigation and calendar selection moved to server-side',
+      run: (callback) => {
+        // This migration marks completion of navigation fix - all date calculations server-side
+        console.log('✅ v1.6.6: All navigation now server-side - client-specific date issues resolved');
+        callback();
       }
     }
   ];
@@ -485,7 +511,8 @@ app.post('/api/debug/client-info', (req, res) => {
 
 app.get('/api/config', (req, res) => {
   res.json({ 
-    baseUrl: config.baseUrl
+    baseUrl: config.baseUrl,
+    enableDebugLogs: config.enableDebugLogs
   });
 });
 
@@ -598,19 +625,88 @@ app.delete('/api/employees/:id', requireAuth, (req, res) => {
   });
 });
 
+// SERVER-SIDE WEEK CALCULATION ENDPOINT
+function calculateWeekStart(targetDate, timezoneSetting) {
+  // Calculate date in application timezone
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezoneSetting,
+    year: 'numeric',
+    month: '2-digit',  
+    day: '2-digit'
+  });
+  
+  const parts = formatter.formatToParts(targetDate);
+  const year = parseInt(parts.find(p => p.type === 'year').value);
+  const month = parseInt(parts.find(p => p.type === 'month').value);
+  const day = parseInt(parts.find(p => p.type === 'day').value);
+  
+  // Create date in app timezone 
+  const appTimezoneDate = new Date(year, month - 1, day, 12, 0, 0);
+  const dayOfWeek = appTimezoneDate.getDay();
+  
+  // Calculate Monday of this week (week start)
+  const adjustedDay = dayOfWeek === 0 ? 7 : dayOfWeek;
+  const diff = adjustedDay - 1;
+  
+  const monday = new Date(appTimezoneDate);
+  monday.setDate(appTimezoneDate.getDate() - diff);
+  
+  return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+}
+
+app.get('/api/current-week', async (req, res) => {
+  try {
+    // Get application timezone from settings
+    const timezoneSetting = await new Promise((resolve, reject) => {
+      db.get('SELECT setting_value FROM settings WHERE setting_key = ?', ['app_timezone'], (err, row) => {
+        if (err) reject(err);
+        else resolve(row?.setting_value || 'America/New_York');
+      });
+    });
+    
+    const now = new Date();
+    const weekStart = calculateWeekStart(now, timezoneSetting);
+    
+    res.json({ 
+      currentWeek: weekStart,
+      timezone: timezoneSetting,
+      serverTime: now.toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error calculating current week:', error);
+    res.status(500).json({ error: 'Failed to calculate current week' });
+  }
+});
+
+app.post('/api/current-week', async (req, res) => {
+  try {
+    // Get application timezone from settings
+    const timezoneSetting = await new Promise((resolve, reject) => {
+      db.get('SELECT setting_value FROM settings WHERE setting_key = ?', ['app_timezone'], (err, row) => {
+        if (err) reject(err);
+        else resolve(row?.setting_value || 'America/New_York');
+      });
+    });
+    
+    const { targetDate } = req.body;
+    const target = targetDate ? new Date(targetDate) : new Date();
+    const weekStart = calculateWeekStart(target, timezoneSetting);
+    
+    res.json({ 
+      currentWeek: weekStart,
+      timezone: timezoneSetting,
+      targetDate: target.toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error calculating week for target date:', error);
+    res.status(500).json({ error: 'Failed to calculate week' });
+  }
+});
+
 app.get('/api/time-entries/:weekStart', (req, res) => {
   const { weekStart } = req.params;
-  const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
-  const userAgent = req.get('User-Agent') || 'unknown';
-  const timestamp = new Date().toISOString();
-  
-  // DEBUG LOGGING
-  console.log('\n🐛 DEBUG - GET /api/time-entries/:weekStart');
-  console.log(`  Timestamp: ${timestamp}`);
-  console.log(`  Client IP: ${clientIP}`);
-  console.log(`  User-Agent: ${userAgent.substring(0, 50)}...`);
-  console.log(`  Requested week_start: "${weekStart}"`);
-  console.log(`  Query: SELECT ... FROM employees e LEFT JOIN time_entries te ON e.id = te.employee_id AND te.week_start = '${weekStart}'`);
   
   // Prevent caching of time entries data
   res.set({
@@ -635,16 +731,10 @@ app.get('/api/time-entries/:weekStart', (req, res) => {
   
   db.all(query, [weekStart], (err, rows) => {
     if (err) {
-      console.log(`  ERROR: ${err.message}`);
+      console.error('Database error:', err.message);
       res.status(500).json({ error: err.message });
       return;
     }
-    
-    console.log(`  Found ${rows.length} employee records:`);
-    rows.forEach((row, i) => {
-      console.log(`    [${i}] ${row.name} - week_start: ${row.week_start || 'NULL'} - Mon=${row.monday}, Tue=${row.tuesday}`);
-    });
-    console.log('🐛 DEBUG - GET /api/time-entries complete\n');
     
     res.json(rows);
   });
@@ -1159,8 +1249,11 @@ app.delete('/api/tokens/:id', requireAuth, (req, res) => {
 });
 
 app.listen(config.port, () => {
-  console.log(`\n🚀 Employee Hour Tracker v${packageJson.version}`);
-  console.log(`Server is running on port ${config.port}`);
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`🚀 EMPLOYEE HOUR TRACKER v${packageJson.version} STARTED`);
+  console.log(`⏰ Started at: ${new Date().toISOString()}`);
+  console.log(`🌐 Server is running on port ${config.port}`);
+  console.log(`${'='.repeat(60)}`);
   console.log('=== Environment Configuration ===');
   console.log(`VERSION: ${packageJson.version}`);
   console.log(`NODE_ENV: ${config.nodeEnv}`);

@@ -2,7 +2,7 @@
 
 > A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
-![Version](https://img.shields.io/badge/Version-1.6.3-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.6.7-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
@@ -22,7 +22,37 @@
 
 </details>
 
-## 🆕 What's New in v1.6.0
+## 🆕 What's New in v1.6.7
+
+### 🔧 Configurable Debug Logging
+- **NEW**: Environment variable `ENABLE_DEBUG_LOGS=true` to enable/disable debug logging
+- **IMPROVED**: Strategic debug logging for navigation and timezone troubleshooting
+- **ENHANCED**: Server-side and client-side debug logging can be controlled independently
+
+## Previous Release - v1.6.6
+
+### 🕐 Critical Timezone & Navigation Fixes
+- **FIXED**: Multi-timezone data separation bug where users in different timezones saw different data  
+- **FIXED**: Week navigation arrows not working on some client computers
+- **FIXED**: Calendar date selection inconsistencies on specific workstations
+- **NEW**: All navigation now uses server-side week calculation for 100% consistency
+- **IMPROVED**: Production build with debug logging removed
+- **UPGRADE**: Resolves all known timezone and navigation issues from v1.6.5 and earlier
+
+## ⚠️ Version Upgrade Notices
+
+### **v1.6.5 and Earlier - CRITICAL TIMEZONE BUGS**
+- **🚨 UPGRADE IMMEDIATELY**: Versions 1.6.5 and earlier contain critical timezone bugs
+- **Issue**: Users in different timezones see separate data instead of shared company data
+- **Issue**: Week navigation arrows may not work on specific client computers  
+- **Issue**: Calendar Monday selection may fail on certain workstations
+- **Solution**: **Upgrade to v1.6.6 or later** for complete resolution
+
+### **v1.6.3 - INCOMPLETE TIMEZONE FIX**
+- **⚠️ PARTIAL FIX**: This version attempted timezone fixes but was incomplete
+- **Recommendation**: **Skip to v1.6.6 or later** for complete timezone resolution
+
+## Previous Major Release - v1.6.0
 
 ### 🚀 Complete API Platform
 - **API Token Authentication**: Generate secure API tokens for external integrations
@@ -43,6 +73,8 @@
   - Time entry operations
   - Analytics and reporting
   - Data export in multiple formats
+
+**⚠️ UPGRADE NOTICE**: v1.6.0 contains timezone bugs. **Upgrade to v1.6.6 or later immediately**.
 
 [View Full Changelog](CHANGELOG.md)
 
@@ -158,6 +190,7 @@ Access the application at `http://localhost:3000`
 | `BACKUP_ENABLED` | `true` | Enable automated backups |
 | `BACKUP_INTERVAL` | `86400000` | Backup interval in milliseconds (default: 24 hours) |
 | `BACKUP_RETENTION_DAYS` | `30` | Number of days to keep backup files |
+| `ENABLE_DEBUG_LOGS` | `false` | Enable detailed debug logging for troubleshooting |
 
 ### Docker Compose Configuration
 
@@ -172,6 +205,7 @@ services:
       - SESSION_SECRET=your-secure-secret-here
       - DEFAULT_ADMIN_USERNAME=admin
       - DEFAULT_ADMIN_PASSWORD=change-this-password
+      - ENABLE_DEBUG_LOGS=false  # Set to true for troubleshooting
     ports:
       - "3000:3000"
     volumes:
