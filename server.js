@@ -166,6 +166,14 @@ function runMigrations() {
           });
         });
       }
+    },
+    {
+      name: 'v1.6.3_add_timezone_setting',
+      description: 'Add configurable application timezone setting',
+      run: (callback) => {
+        // Add application timezone setting with default to Eastern Time
+        db.run(`INSERT OR IGNORE INTO settings (setting_key, setting_value) VALUES ('app_timezone', 'America/New_York')`, callback);
+      }
     }
   ];
   

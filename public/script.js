@@ -1,5 +1,8 @@
 class EmployeeTracker {
     constructor() {
+        // Global application timezone - will be loaded from server settings
+        this.appTimezone = 'America/New_York'; // Default to Eastern Time
+        
         this.currentWeekStart = this.getWeekStart(new Date());
         this.employees = [];
         this.timeEntries = [];
@@ -22,6 +25,7 @@ class EmployeeTracker {
         this.handleDirectRouting();
         this.parseURLParameters();
         await this.loadConfig();
+        await this.loadTimezoneSettings();
         await this.loadDefaultWeekSetting();
         this.updateWeekDisplay();
         // Load employees first, then time entries to ensure proper rendering
@@ -274,6 +278,7 @@ class EmployeeTracker {
         document.getElementById('add-employee-form').addEventListener('submit', (e) => this.handleAddEmployee(e));
         document.getElementById('change-credentials-form').addEventListener('submit', (e) => this.handleChangeCredentials(e));
         document.getElementById('save-week-setting').addEventListener('click', () => this.saveWeekSetting());
+        document.getElementById('save-timezone-setting').addEventListener('click', () => this.saveTimezoneSetting());
         
         document.getElementById('export-csv').addEventListener('click', () => this.exportData('csv'));
         document.getElementById('export-json').addEventListener('click', () => this.exportData('json'));
@@ -382,20 +387,40 @@ class EmployeeTracker {
     }
     
     getWeekStart(date) {
+        // Convert to application timezone (default: America/New_York)
+        const appTimezone = this.appTimezone || 'America/New_York';
         const d = new Date(date);
-        const day = d.getDay();
+        
+        // Create date in application timezone
+        const localDate = new Date(d.toLocaleString("en-US", {timeZone: appTimezone}));
+        const day = localDate.getDay();
+        
         // Convert Sunday (0) to 7 to make Monday (1) the start of week
         const adjustedDay = day === 0 ? 7 : day;
         const diff = adjustedDay - 1; // Days since Monday
         
         // Create a new date object to avoid modifying the original
-        const monday = new Date(d);
-        monday.setDate(d.getDate() - diff);
+        const monday = new Date(localDate);
+        monday.setDate(localDate.getDate() - diff);
         
-        // Reset time to start of day to avoid timezone issues
-        monday.setHours(0, 0, 0, 0);
+        // Format as YYYY-MM-DD in application timezone
+        const year = monday.getFullYear();
+        const month = String(monday.getMonth() + 1).padStart(2, '0');
+        const day_str = String(monday.getDate()).padStart(2, '0');
         
-        return monday.toISOString().split('T')[0];
+        return `${year}-${month}-${day_str}`;
+    }
+    
+    // Helper function to format any date in the application timezone
+    formatDateInAppTimezone(date) {
+        const appTimezone = this.appTimezone || 'America/New_York';
+        const localDate = new Date(date.toLocaleString("en-US", {timeZone: appTimezone}));
+        
+        const year = localDate.getFullYear();
+        const month = String(localDate.getMonth() + 1).padStart(2, '0');
+        const day = String(localDate.getDate()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}`;
     }
     
     updateWeekDisplay() {
@@ -1073,8 +1098,8 @@ class EmployeeTracker {
         document.getElementById('custom-date-range').style.display = 'none';
         
         this.currentDateRange = { 
-            start: startDate.toISOString().split('T')[0], 
-            end: endDate.toISOString().split('T')[0], 
+            start: this.formatDateInAppTimezone(startDate), 
+            end: this.formatDateInAppTimezone(endDate), 
             preset 
         };
         
@@ -1220,6 +1245,18 @@ class EmployeeTracker {
         }
     }
     
+    async loadTimezoneSettings() {
+        try {
+            const response = await fetch('/api/settings/app_timezone');
+            const data = await response.json();
+            this.appTimezone = data.value || 'America/New_York';
+            console.log('Loaded application timezone:', this.appTimezone);
+        } catch (error) {
+            console.error('Error loading timezone setting:', error);
+            // Keep default timezone
+        }
+    }
+
     async loadDefaultWeekSetting() {
         try {
             const response = await fetch('/api/settings/default_week_offset');
@@ -1239,11 +1276,20 @@ class EmployeeTracker {
     
     async loadCurrentSettings() {
         try {
-            const response = await fetch('/api/settings/default_week_offset');
-            const data = await response.json();
-            const select = document.getElementById('default-week-offset');
-            if (select) {
-                select.value = data.value || '0';
+            // Load week offset setting
+            const weekResponse = await fetch('/api/settings/default_week_offset');
+            const weekData = await weekResponse.json();
+            const weekSelect = document.getElementById('default-week-offset');
+            if (weekSelect) {
+                weekSelect.value = weekData.value || '0';
+            }
+            
+            // Load timezone setting
+            const timezoneResponse = await fetch('/api/settings/app_timezone');
+            const timezoneData = await timezoneResponse.json();
+            const timezoneSelect = document.getElementById('app-timezone');
+            if (timezoneSelect) {
+                timezoneSelect.value = timezoneData.value || 'America/New_York';
             }
         } catch (error) {
             console.error('Error loading current settings:', error);
@@ -1290,6 +1336,49 @@ class EmployeeTracker {
             messageDiv.textContent = '';
             messageDiv.className = 'message';
         }, 3000);
+    }
+    
+    async saveTimezoneSetting() {
+        const timezone = document.getElementById('app-timezone').value;
+        const messageDiv = document.getElementById('settings-message');
+        
+        try {
+            const response = await fetch('/api/settings/app_timezone', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ value: timezone }),
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                messageDiv.textContent = 'Timezone setting saved successfully! All users will now use this timezone.';
+                messageDiv.className = 'message success';
+                
+                // Update timezone immediately
+                this.appTimezone = timezone;
+                console.log('Updated application timezone to:', this.appTimezone);
+                
+                // Recalculate current week with new timezone
+                this.currentWeekStart = this.getWeekStart(new Date());
+                this.updateWeekDisplay();
+                this.loadTimeEntries();
+            } else {
+                messageDiv.textContent = data.error || 'Error saving timezone setting';
+                messageDiv.className = 'message error';
+            }
+        } catch (error) {
+            console.error('Error saving timezone setting:', error);
+            messageDiv.textContent = 'Error saving timezone setting';
+            messageDiv.className = 'message error';
+        }
+        
+        // Clear message after 5 seconds (longer for timezone as it's important)
+        setTimeout(() => {
+            messageDiv.textContent = '';
+            messageDiv.className = 'message';
+        }, 5000);
     }
     
     handleDeleteConfirmationInput(e) {
