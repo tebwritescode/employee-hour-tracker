@@ -1,6 +1,6 @@
 {
   "name": "employee-hour-tracker",
-  "version": "1.6.7",
+  "version": "1.6.8",
   "description": "Employee work time tracking system",
   "main": "server.js",
   "scripts": {

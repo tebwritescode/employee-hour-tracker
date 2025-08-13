@@ -489,6 +489,7 @@ class EmployeeTracker {
         
         // Use server-side week calculation for consistency
         try {
+            this.debugLog(`changeWeek - making POST request to /api/current-week`);
             const response = await fetch('/api/current-week', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -497,21 +498,27 @@ class EmployeeTracker {
                 })
             });
             
+            this.debugLog(`changeWeek - response status: ${response.status} ${response.statusText}`);
+            
             if (response.ok) {
                 const data = await response.json();
                 this.currentWeekStart = data.currentWeek;
-                this.debugLog(`changeWeek - server-side calculation result: ${this.currentWeekStart}`);
+                this.debugLog(`changeWeek - server-side calculation SUCCESS: ${this.currentWeekStart}`);
             } else {
                 // Fallback to client calculation
+                const responseText = await response.text();
+                this.debugLog(`changeWeek - server response error: ${response.status} ${response.statusText} - ${responseText}`);
                 this.currentWeekStart = this.getWeekStart(currentDate);
                 this.debugLog(`changeWeek - fallback to client calculation: ${this.currentWeekStart}`);
             }
         } catch (error) {
             // Fallback to client calculation
+            this.debugLog(`changeWeek - fetch error:`, error.message, error);
             this.currentWeekStart = this.getWeekStart(currentDate);
-            this.debugLog(`changeWeek - error fallback to client calculation: ${this.currentWeekStart}, error:`, error);
+            this.debugLog(`changeWeek - error fallback to client calculation: ${this.currentWeekStart}`);
         }
         
+        this.debugLog(`changeWeek - calling updateWeekDisplay and loadTimeEntries`);
         this.updateWeekDisplay();
         this.loadTimeEntries();
     }
@@ -526,6 +533,7 @@ class EmployeeTracker {
         
         // Use server-side week calculation for consistency
         try {
+            this.debugLog(`setWeek - making POST request to /api/current-week`);
             const response = await fetch('/api/current-week', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -534,21 +542,27 @@ class EmployeeTracker {
                 })
             });
             
+            this.debugLog(`setWeek - response status: ${response.status} ${response.statusText}`);
+            
             if (response.ok) {
                 const data = await response.json();
                 this.currentWeekStart = data.currentWeek;
-                this.debugLog(`setWeek - server-side calculation result: ${this.currentWeekStart}`);
+                this.debugLog(`setWeek - server-side calculation SUCCESS: ${this.currentWeekStart}`);
             } else {
                 // Fallback to client calculation
+                const responseText = await response.text();
+                this.debugLog(`setWeek - server response error: ${response.status} ${response.statusText} - ${responseText}`);
                 this.currentWeekStart = this.getWeekStart(selectedDate);
                 this.debugLog(`setWeek - fallback to client calculation: ${this.currentWeekStart}`);
             }
         } catch (error) {
             // Fallback to client calculation
+            this.debugLog(`setWeek - fetch error:`, error.message, error);
             this.currentWeekStart = this.getWeekStart(selectedDate);
-            this.debugLog(`setWeek - error fallback to client calculation: ${this.currentWeekStart}, error:`, error);
+            this.debugLog(`setWeek - error fallback to client calculation: ${this.currentWeekStart}`);
         }
         
+        this.debugLog(`setWeek - calling updateWeekDisplay and loadTimeEntries`);
         this.updateWeekDisplay();
         this.loadTimeEntries();
     }

@@ -680,6 +680,11 @@ app.get('/api/current-week', async (req, res) => {
 });
 
 app.post('/api/current-week', async (req, res) => {
+  const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+  
+  debugLog(`POST /api/current-week - Client: ${clientIP}`);
+  debugLog(`POST /api/current-week - Request body:`, req.body);
+  
   try {
     // Get application timezone from settings
     const timezoneSetting = await new Promise((resolve, reject) => {
@@ -689,18 +694,27 @@ app.post('/api/current-week', async (req, res) => {
       });
     });
     
+    debugLog(`POST /api/current-week - Timezone setting: ${timezoneSetting}`);
+    
     const { targetDate } = req.body;
     const target = targetDate ? new Date(targetDate) : new Date();
     const weekStart = calculateWeekStart(target, timezoneSetting);
     
-    res.json({ 
+    debugLog(`POST /api/current-week - Target date: ${target.toISOString()}`);
+    debugLog(`POST /api/current-week - Calculated week start: ${weekStart}`);
+    
+    const response = { 
       currentWeek: weekStart,
       timezone: timezoneSetting,
       targetDate: target.toISOString()
-    });
+    };
+    
+    debugLog(`POST /api/current-week - Sending response:`, response);
+    res.json(response);
     
   } catch (error) {
     console.error('Error calculating week for target date:', error);
+    debugLog(`POST /api/current-week - ERROR:`, error);
     res.status(500).json({ error: 'Failed to calculate week' });
   }
 });
