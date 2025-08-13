@@ -138,3 +138,11 @@ When database schema changes are needed:
 8. **Docker deployment**: Use docker-compose.yml for production deployment with persistent volumes for data and backups. Build multi-arch images using: `docker buildx build --platform linux/amd64,linux/arm64`
    - **IMPORTANT**: Docker tags must ALWAYS include the 'v' prefix (e.g., v1.5.2, NOT 1.5.2)
    - Build and push command format: `docker buildx build --platform linux/amd64,linux/arm64 -t tebwritescode/employee-hour-tracker:latest -t tebwritescode/employee-hour-tracker:v1.5.2 --push .`
+
+## Troubleshooting Reference
+
+**IMPORTANT**: For ongoing issues, current investigation status, and development context, see:
+- **`TROUBLESHOOTING_NOTES.md`** - Complete development troubleshooting reference with current status, known issues, investigation plans, and "where we left off" information
+- **`README.md`** - User-facing documentation with known issues and workarounds  
+
+When resuming work on bugs or investigation, ALWAYS start by reading `TROUBLESHOOTING_NOTES.md` to understand the current state, what has been tried, and what the next steps should be.
