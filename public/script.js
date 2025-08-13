@@ -3,6 +3,9 @@ class EmployeeTracker {
         // Global application timezone - will be loaded from server settings
         this.appTimezone = 'America/New_York'; // Default to Eastern Time
         
+        // EMERGENCY TIMEZONE DIAGNOSTIC - Log client info immediately
+        this.logClientTimezoneInfo();
+        
         this.currentWeekStart = this.getWeekStart(new Date());
         this.employees = [];
         this.timeEntries = [];
@@ -387,17 +390,30 @@ class EmployeeTracker {
     }
     
     getWeekStart(date) {
-        // Convert to application timezone (default: America/New_York)
+        // DEBUG LOGGING for timezone issues
         const appTimezone = this.appTimezone || 'America/New_York';
         const d = new Date(date);
+        
+        console.log('🐛 DEBUG - getWeekStart called:');
+        console.log('  Input date:', date);
+        console.log('  Input date ISO:', d.toISOString());
+        console.log('  App timezone:', appTimezone);
+        console.log('  User timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+        console.log('  User locale time:', d.toLocaleString());
         
         // Create date in application timezone
         const localDate = new Date(d.toLocaleString("en-US", {timeZone: appTimezone}));
         const day = localDate.getDay();
         
+        console.log('  Date in app timezone:', localDate.toLocaleString());
+        console.log('  Day of week:', day, '(0=Sun, 1=Mon, 2=Tue...)');
+        
         // Convert Sunday (0) to 7 to make Monday (1) the start of week
         const adjustedDay = day === 0 ? 7 : day;
         const diff = adjustedDay - 1; // Days since Monday
+        
+        console.log('  Adjusted day:', adjustedDay);
+        console.log('  Days to subtract:', diff);
         
         // Create a new date object to avoid modifying the original
         const monday = new Date(localDate);
@@ -408,7 +424,67 @@ class EmployeeTracker {
         const month = String(monday.getMonth() + 1).padStart(2, '0');
         const day_str = String(monday.getDate()).padStart(2, '0');
         
-        return `${year}-${month}-${day_str}`;
+        const result = `${year}-${month}-${day_str}`;
+        console.log('  Monday (week start):', monday.toLocaleString());
+        console.log('  Result week_start:', result);
+        console.log('🐛 DEBUG - getWeekStart complete\n');
+        
+        return result;
+    }
+    
+    // EMERGENCY CLIENT DIAGNOSTIC FUNCTION
+    logClientTimezoneInfo() {
+        const now = new Date();
+        console.log('\n🚨 EMERGENCY CLIENT DIAGNOSTIC 🚨');
+        console.log('=================================');
+        console.log('Current time:', now.toString());
+        console.log('UTC time:', now.toUTCString());
+        console.log('ISO time:', now.toISOString());
+        console.log('Client timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+        console.log('Timezone offset (minutes):', now.getTimezoneOffset());
+        console.log('Browser locale:', navigator.language || 'unknown');
+        console.log('User agent:', navigator.userAgent);
+        console.log('Screen resolution:', `${screen.width}x${screen.height}`);
+        
+        // Test date parsing with different methods
+        const testDateStr = '2025-08-12T00:00:00';
+        console.log('\nTesting date parsing:');
+        console.log('Input: "2025-08-12T00:00:00"');
+        console.log('new Date("2025-08-12T00:00:00"):', new Date(testDateStr).toString());
+        console.log('toLocaleString with app timezone:', new Date(testDateStr).toLocaleString("en-US", {timeZone: this.appTimezone}));
+        console.log('getDay() result:', new Date(testDateStr).getDay());
+        
+        // Show what getWeekStart would produce right now
+        const weekStart = this.getWeekStart(now);
+        console.log('\nCurrent week start calculation:');
+        console.log('Result:', weekStart);
+        console.log('=================================\n');
+        
+        // Also send this info to the server for logging
+        this.sendDiagnosticData({
+            clientTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            timezoneOffset: now.getTimezoneOffset(),
+            userAgent: navigator.userAgent.substring(0, 100),
+            currentWeekStart: weekStart,
+            testResults: {
+                inputTime: testDateStr,
+                parsedTime: new Date(testDateStr).toString(),
+                getDay: new Date(testDateStr).getDay(),
+                appTimezoneConversion: new Date(testDateStr).toLocaleString("en-US", {timeZone: this.appTimezone})
+            }
+        });
+    }
+    
+    async sendDiagnosticData(data) {
+        try {
+            await fetch('/api/debug/client-info', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+        } catch (error) {
+            console.log('Could not send diagnostic data to server:', error.message);
+        }
     }
     
     // Helper function to format any date in the application timezone
@@ -476,9 +552,18 @@ class EmployeeTracker {
             // Clear existing time entries to ensure fresh data
             this.timeEntries = [];
             
+            console.log('🐛 DEBUG - loadTimeEntries called:');
+            console.log('  Current week start:', this.currentWeekStart);
+            console.log('  App timezone:', this.appTimezone);
+            console.log('  User timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+            console.log('  Request URL will be: /api/time-entries/' + this.currentWeekStart);
+            
             // Add timestamp to URL to prevent caching
             const timestamp = new Date().getTime();
-            const response = await fetch(`/api/time-entries/${this.currentWeekStart}?t=${timestamp}`, {
+            const requestUrl = `/api/time-entries/${this.currentWeekStart}?t=${timestamp}`;
+            console.log('  Full request URL:', requestUrl);
+            
+            const response = await fetch(requestUrl, {
                 headers: {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
                     'Pragma': 'no-cache',
@@ -486,12 +571,18 @@ class EmployeeTracker {
                 }
             });
             
+            console.log('  Response status:', response.status);
+            
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
             this.timeEntries = await response.json();
-            console.log('Loaded time entries for week:', this.currentWeekStart, this.timeEntries);
+            console.log('  Loaded', this.timeEntries.length, 'time entries:');
+            this.timeEntries.forEach((entry, i) => {
+                console.log(`    [${i}] ${entry.name} - week_start: ${entry.week_start || 'undefined'}`);
+            });
+            console.log('🐛 DEBUG - loadTimeEntries complete\n');
             this.renderTimeGrid();
         } catch (error) {
             console.error('Error loading time entries:', error);
@@ -586,18 +677,32 @@ class EmployeeTracker {
         const currentIndex = statuses.indexOf(currentStatus);
         const nextStatus = statuses[(currentIndex + 1) % statuses.length];
         
+        const requestBody = {
+            employeeId,
+            weekStart: this.currentWeekStart,
+            day,
+            status: nextStatus
+        };
+        
+        console.log('🐛 DEBUG - cycleStatus updating:');
+        console.log('  Employee ID:', employeeId);
+        console.log('  Week start:', this.currentWeekStart);
+        console.log('  Day:', day);
+        console.log('  Current status:', currentStatus);
+        console.log('  Next status:', nextStatus);
+        console.log('  Full request body:', requestBody);
+        console.log('  App timezone:', this.appTimezone);
+        console.log('  User timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+        
         try {
             const response = await fetch('/api/time-entries', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    employeeId,
-                    weekStart: this.currentWeekStart,
-                    day,
-                    status: nextStatus
-                }),
+                body: JSON.stringify(requestBody),
                 credentials: 'include'
             });
+            
+            console.log('  Update response status:', response.status);
             
             if (response.ok) {
                 button.textContent = nextStatus;

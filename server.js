@@ -459,6 +459,30 @@ app.get('/api/version', (req, res) => {
   });
 });
 
+// EMERGENCY DIAGNOSTIC ENDPOINT
+app.post('/api/debug/client-info', (req, res) => {
+  const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+  const timestamp = new Date().toISOString();
+  const data = req.body;
+  
+  console.log('\n🚨 CLIENT DIAGNOSTIC RECEIVED 🚨');
+  console.log('====================================');
+  console.log('Timestamp:', timestamp);
+  console.log('Client IP:', clientIP);
+  console.log('Client Timezone:', data.clientTimezone);
+  console.log('Timezone Offset:', data.timezoneOffset, 'minutes');
+  console.log('User Agent:', data.userAgent);
+  console.log('Current Week Start:', data.currentWeekStart);
+  console.log('Test Results:');
+  console.log('  Input Time:', data.testResults.inputTime);
+  console.log('  Parsed Time:', data.testResults.parsedTime);
+  console.log('  getDay():', data.testResults.getDay);
+  console.log('  App TZ Conversion:', data.testResults.appTimezoneConversion);
+  console.log('====================================\n');
+  
+  res.json({ success: true });
+});
+
 app.get('/api/config', (req, res) => {
   res.json({ 
     baseUrl: config.baseUrl
@@ -576,6 +600,17 @@ app.delete('/api/employees/:id', requireAuth, (req, res) => {
 
 app.get('/api/time-entries/:weekStart', (req, res) => {
   const { weekStart } = req.params;
+  const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+  const userAgent = req.get('User-Agent') || 'unknown';
+  const timestamp = new Date().toISOString();
+  
+  // DEBUG LOGGING
+  console.log('\n🐛 DEBUG - GET /api/time-entries/:weekStart');
+  console.log(`  Timestamp: ${timestamp}`);
+  console.log(`  Client IP: ${clientIP}`);
+  console.log(`  User-Agent: ${userAgent.substring(0, 50)}...`);
+  console.log(`  Requested week_start: "${weekStart}"`);
+  console.log(`  Query: SELECT ... FROM employees e LEFT JOIN time_entries te ON e.id = te.employee_id AND te.week_start = '${weekStart}'`);
   
   // Prevent caching of time entries data
   res.set({
@@ -585,7 +620,7 @@ app.get('/api/time-entries/:weekStart', (req, res) => {
   });
   
   const query = `
-    SELECT e.id, e.name, 
+    SELECT e.id, e.name, te.week_start,
            COALESCE(te.monday, 'Empty') as monday,
            COALESCE(te.tuesday, 'Empty') as tuesday,
            COALESCE(te.wednesday, 'Empty') as wednesday,
@@ -600,15 +635,36 @@ app.get('/api/time-entries/:weekStart', (req, res) => {
   
   db.all(query, [weekStart], (err, rows) => {
     if (err) {
+      console.log(`  ERROR: ${err.message}`);
       res.status(500).json({ error: err.message });
       return;
     }
+    
+    console.log(`  Found ${rows.length} employee records:`);
+    rows.forEach((row, i) => {
+      console.log(`    [${i}] ${row.name} - week_start: ${row.week_start || 'NULL'} - Mon=${row.monday}, Tue=${row.tuesday}`);
+    });
+    console.log('🐛 DEBUG - GET /api/time-entries complete\n');
+    
     res.json(rows);
   });
 });
 
 app.post('/api/time-entries', requireAuth, (req, res) => {
   const { employeeId, weekStart, day, status } = req.body;
+  const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+  const timestamp = new Date().toISOString();
+  
+  // DEBUG LOGGING
+  console.log('\n🐛 DEBUG - POST /api/time-entries');
+  console.log(`  Timestamp: ${timestamp}`);
+  console.log(`  Client IP: ${clientIP}`);
+  console.log(`  Employee ID: ${employeeId}`);
+  console.log(`  Week start: "${weekStart}"`);
+  console.log(`  Day: ${day}`);
+  console.log(`  Status: ${status}`);
+  console.log(`  Query: INSERT INTO time_entries (employee_id, week_start, ${day}) VALUES (${employeeId}, '${weekStart}', '${status}')`);
+  console.log(`         ON CONFLICT(employee_id, week_start) DO UPDATE SET ${day} = '${status}', updated_at = CURRENT_TIMESTAMP`);
   
   const query = `
     INSERT INTO time_entries (employee_id, week_start, ${day}) 
@@ -619,9 +675,12 @@ app.post('/api/time-entries', requireAuth, (req, res) => {
   
   db.run(query, [employeeId, weekStart, status, status], function(err) {
     if (err) {
+      console.log(`  ERROR: ${err.message}`);
       res.status(500).json({ error: err.message });
       return;
     }
+    console.log(`  SUCCESS: Updated/inserted time entry for employee ${employeeId}, week ${weekStart}, ${day} = ${status}`);
+    console.log('🐛 DEBUG - POST /api/time-entries complete\n');
     res.json({ success: true });
   });
 });
