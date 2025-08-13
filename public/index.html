@@ -174,6 +174,22 @@
                         </select>
                         <button id="save-week-setting" class="btn btn-primary">Save</button>
                     </div>
+                    
+                    <div class="setting-item">
+                        <label for="app-timezone">Application Timezone (affects all users):</label>
+                        <select id="app-timezone" class="setting-input">
+                            <option value="America/New_York">Eastern Time (EST/EDT)</option>
+                            <option value="America/Chicago">Central Time (CST/CDT)</option>
+                            <option value="America/Denver">Mountain Time (MST/MDT)</option>
+                            <option value="America/Los_Angeles">Pacific Time (PST/PDT)</option>
+                            <option value="UTC">UTC (GMT)</option>
+                            <option value="Europe/London">GMT (London)</option>
+                            <option value="Europe/Berlin">CET (Berlin)</option>
+                            <option value="Asia/Tokyo">JST (Tokyo)</option>
+                        </select>
+                        <button id="save-timezone-setting" class="btn btn-primary">Save</button>
+                    </div>
+                    
                     <div id="settings-message" class="message"></div>
                 </div>
 
