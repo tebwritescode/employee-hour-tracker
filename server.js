@@ -801,11 +801,11 @@ app.post('/api/date-operations', async (req, res) => {
         break;
         
       case 'validateDateRange':
-        const { startDate, endDate } = params;
+        const { startDate: startDateStr, endDate: endDateStr } = params;
         
         try {
-          const start = new Date(startDate + 'T12:00:00');
-          const end = new Date(endDate + 'T12:00:00');
+          const start = new Date(startDateStr + 'T12:00:00');
+          const end = new Date(endDateStr + 'T12:00:00');
           
           if (isNaN(start.getTime()) || isNaN(end.getTime())) {
             result.valid = false;
