@@ -758,17 +758,17 @@ app.post('/api/date-operations', async (req, res) => {
         
       case 'formatWeekDisplay':
         const { weekStartDate } = params;
-        const startDate = new Date(weekStartDate + 'T12:00:00');
-        const endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6);
+        const weekDisplayStartDate = new Date(weekStartDate + 'T12:00:00');
+        const weekDisplayEndDate = new Date(weekDisplayStartDate);
+        weekDisplayEndDate.setDate(weekDisplayStartDate.getDate() + 6);
         
         const formatOptions = { month: 'short', day: 'numeric', timeZone: timezoneSetting };
-        const startFormatted = startDate.toLocaleDateString('en-US', formatOptions);
-        const endFormatted = endDate.toLocaleDateString('en-US', formatOptions);
+        const startFormatted = weekDisplayStartDate.toLocaleDateString('en-US', formatOptions);
+        const endFormatted = weekDisplayEndDate.toLocaleDateString('en-US', formatOptions);
         
-        result.display = `${startFormatted} - ${endFormatted}, ${startDate.getFullYear()}`;
-        result.startDate = startDate.toISOString().split('T')[0];
-        result.endDate = endDate.toISOString().split('T')[0];
+        result.display = `${startFormatted} - ${endFormatted}, ${weekDisplayStartDate.getFullYear()}`;
+        result.startDate = weekDisplayStartDate.toISOString().split('T')[0];
+        result.endDate = weekDisplayEndDate.toISOString().split('T')[0];
         break;
         
       case 'calculateDateRange':
