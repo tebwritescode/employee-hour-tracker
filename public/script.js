@@ -20,22 +20,53 @@ class EmployeeTracker {
     }
     
     async init() {
-        // Check version first to handle any necessary refreshes
-        await this.loadVersion();
-        
-        this.setupEventListeners();
-        this.handleDirectRouting();
-        await this.parseURLParameters();
-        await this.loadConfig();
-        await this.loadTimezoneSettings();
-        await this.loadCurrentWeekFromServer();
-        await this.loadDefaultWeekSetting();
-        await this.updateWeekDisplay();
-        // Load employees first, then time entries to ensure proper rendering
-        await this.loadEmployees();
-        await this.loadTimeEntries();
-        this.checkAuthentication();
-        this.startAutoRefresh();
+        try {
+            // Set up basic UI first
+            this.setupEventListeners();
+            this.handleDirectRouting();
+            
+            // Load essential config with timeout
+            await Promise.race([
+                this.loadConfig(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Config timeout')), 5000))
+            ]).catch(() => console.warn('Config load failed, using defaults'));
+            
+            // Load version and timezone settings in parallel with fallbacks
+            await Promise.allSettled([
+                this.loadVersion(),
+                this.loadTimezoneSettings(),
+                this.parseURLParameters()
+            ]);
+            
+            // Try to load current week with fallback
+            try {
+                await Promise.race([
+                    this.loadCurrentWeekFromServer(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Current week timeout')), 3000))
+                ]);
+            } catch (error) {
+                console.warn('Server week load failed, using fallback');
+                this.currentWeekStart = this.getWeekStart(new Date());
+            }
+            
+            // Load other data in parallel
+            await Promise.allSettled([
+                this.loadDefaultWeekSetting(),
+                this.updateWeekDisplay(),
+                this.loadEmployees()
+            ]);
+            
+            // Load time entries after employees
+            await this.loadTimeEntries();
+            
+            // Initialize auth and auto-refresh
+            this.checkAuthentication();
+            this.startAutoRefresh();
+        } catch (error) {
+            console.error('Initialization failed:', error);
+            // Show error message to user
+            document.body.innerHTML = '<div style="text-align: center; padding: 50px; color: red;"><h1>Loading Error</h1><p>The application failed to initialize. Please refresh the page.</p></div>';
+        }
     }
     
     async loadConfig() {
