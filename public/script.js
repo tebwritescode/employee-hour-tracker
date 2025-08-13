@@ -167,7 +167,7 @@ class EmployeeTracker {
                 this.currentDateRange.end = end;
                 this.currentDateRange.preset = 'custom';
                 // Set the custom date inputs
-                setTimeout(() => {
+                setTimeout(async () => {
                     const startInput = document.getElementById('start-date');
                     const endInput = document.getElementById('end-date');
                     if (startInput && endInput) {

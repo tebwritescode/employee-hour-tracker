@@ -1396,6 +1396,7 @@ app.listen(config.port, () => {
   console.log(`SESSION_SECRET: ${config.sessionSecret.substring(0, 10)}...`);
   console.log(`DEFAULT_ADMIN_USERNAME: ${config.defaultAdminUsername}`);
   console.log(`DEFAULT_ADMIN_PASSWORD: [SET]`);
+  console.log(`DEBUG_LOGS: ${config.enableDebugLogs ? '🐛 ENABLED' : '❌ DISABLED'}`);
   console.log('=== All Environment Variables ===');
   Object.keys(process.env)
     .filter(key => key.startsWith('NODE_') || key.startsWith('DB_') || key.startsWith('SESSION_') || key.startsWith('DEFAULT_') || key.startsWith('BACKUP_'))
