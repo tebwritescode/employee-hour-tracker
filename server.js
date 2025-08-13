@@ -719,6 +719,125 @@ app.post('/api/current-week', async (req, res) => {
   }
 });
 
+// SERVER-SIDE DATE OPERATIONS ENDPOINT
+app.post('/api/date-operations', async (req, res) => {
+  try {
+    // Get application timezone from settings
+    const timezoneSetting = await new Promise((resolve, reject) => {
+      db.get('SELECT setting_value FROM settings WHERE setting_key = ?', ['app_timezone'], (err, row) => {
+        if (err) reject(err);
+        else resolve(row?.setting_value || 'America/New_York');
+      });
+    });
+    
+    const { operation, params } = req.body;
+    let result = {};
+    
+    switch (operation) {
+      case 'getToday':
+        const today = new Date();
+        result.today = today.toISOString().split('T')[0];
+        result.weekStart = calculateWeekStart(today, timezoneSetting);
+        break;
+        
+      case 'addDays':
+        const { startDate, days } = params;
+        const baseDate = new Date(startDate + 'T12:00:00');
+        baseDate.setDate(baseDate.getDate() + days);
+        result.newDate = baseDate.toISOString().split('T')[0];
+        result.weekStart = calculateWeekStart(baseDate, timezoneSetting);
+        break;
+        
+      case 'addWeeks':
+        const { startDate: weekStart, weeks } = params;
+        const weekDate = new Date(weekStart + 'T12:00:00');
+        weekDate.setDate(weekDate.getDate() + (weeks * 7));
+        result.newDate = weekDate.toISOString().split('T')[0];
+        result.weekStart = calculateWeekStart(weekDate, timezoneSetting);
+        break;
+        
+      case 'formatWeekDisplay':
+        const { weekStartDate } = params;
+        const startDate = new Date(weekStartDate + 'T12:00:00');
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        
+        const formatOptions = { month: 'short', day: 'numeric', timeZone: timezoneSetting };
+        const startFormatted = startDate.toLocaleDateString('en-US', formatOptions);
+        const endFormatted = endDate.toLocaleDateString('en-US', formatOptions);
+        
+        result.display = `${startFormatted} - ${endFormatted}, ${startDate.getFullYear()}`;
+        result.startDate = startDate.toISOString().split('T')[0];
+        result.endDate = endDate.toISOString().split('T')[0];
+        break;
+        
+      case 'calculateDateRange':
+        const { preset } = params;
+        const now = new Date();
+        let rangeStart, rangeEnd;
+        
+        switch (preset) {
+          case 'week':
+            const currentWeekStart = calculateWeekStart(now, timezoneSetting);
+            rangeStart = new Date(currentWeekStart + 'T12:00:00');
+            rangeStart.setDate(rangeStart.getDate() - 7); // Previous Monday
+            rangeEnd = new Date(rangeStart);
+            rangeEnd.setDate(rangeEnd.getDate() + 6); // That week's Sunday
+            break;
+          case 'month':
+            rangeStart = new Date(now);
+            rangeStart.setDate(now.getDate() - 30);
+            rangeEnd = new Date(now);
+            break;
+          case '90days':
+            rangeStart = new Date(now);
+            rangeStart.setDate(now.getDate() - 90);
+            rangeEnd = new Date(now);
+            break;
+        }
+        
+        result.startDate = rangeStart.toISOString().split('T')[0];
+        result.endDate = rangeEnd.toISOString().split('T')[0];
+        break;
+        
+      case 'validateDateRange':
+        const { startDate, endDate } = params;
+        
+        try {
+          const start = new Date(startDate + 'T12:00:00');
+          const end = new Date(endDate + 'T12:00:00');
+          
+          if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            result.valid = false;
+            result.message = 'Invalid date format';
+          } else if (start > end) {
+            result.valid = false;
+            result.message = 'Start date must be before end date';
+          } else {
+            result.valid = true;
+            result.message = 'Valid date range';
+          }
+        } catch (error) {
+          result.valid = false;
+          result.message = 'Error validating dates';
+        }
+        break;
+        
+      default:
+        return res.status(400).json({ error: 'Unknown operation' });
+    }
+    
+    result.timezone = timezoneSetting;
+    result.serverTime = new Date().toISOString();
+    
+    res.json(result);
+    
+  } catch (error) {
+    console.error('Error in date operations:', error);
+    res.status(500).json({ error: 'Failed to perform date operation' });
+  }
+});
+
 app.get('/api/time-entries/:weekStart', (req, res) => {
   const { weekStart } = req.params;
   

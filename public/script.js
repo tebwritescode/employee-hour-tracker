@@ -25,12 +25,12 @@ class EmployeeTracker {
         
         this.setupEventListeners();
         this.handleDirectRouting();
-        this.parseURLParameters();
+        await this.parseURLParameters();
         await this.loadConfig();
         await this.loadTimezoneSettings();
         await this.loadCurrentWeekFromServer();
         await this.loadDefaultWeekSetting();
-        this.updateWeekDisplay();
+        await this.updateWeekDisplay();
         // Load employees first, then time entries to ensure proper rendering
         await this.loadEmployees();
         await this.loadTimeEntries();
@@ -58,7 +58,7 @@ class EmployeeTracker {
         }
     }
     
-    parseURLParameters() {
+    async parseURLParameters() {
         const urlParams = new URLSearchParams(window.location.search);
         const range = urlParams.get('range');
         const week = urlParams.get('week');
@@ -68,29 +68,73 @@ class EmployeeTracker {
         if (range) {
             // Handle preset ranges like ?range=lastweek, ?range=lastmonth, ?range=last90days
             if (range === 'lastweek') {
-                const lastWeek = new Date();
-                lastWeek.setDate(lastWeek.getDate() - 7);
-                this.currentWeekStart = this.getWeekStart(lastWeek);
+                // Use server-side date calculation
+                try {
+                    const today = await this.getServerToday();
+                    const response = await fetch('/api/date-operations', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            operation: 'addDays',
+                            params: { startDate: today, days: -7 }
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.currentWeekStart = data.weekStart;
+                    }
+                } catch (error) {
+                    console.error('Error parsing lastweek URL parameter:', error);
+                }
+                
                 if (window.location.pathname.includes('analytics')) {
-                    this.setDatePreset('week');
+                    await this.setDatePreset('week');
                 }
             } else if (range === 'lastmonth') {
                 if (window.location.pathname.includes('analytics')) {
-                    this.setDatePreset('month');
+                    await this.setDatePreset('month');
                 } else {
                     // For tracker, go to 4 weeks ago
-                    const fourWeeksAgo = new Date();
-                    fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
-                    this.currentWeekStart = this.getWeekStart(fourWeeksAgo);
+                    try {
+                        const today = await this.getServerToday();
+                        const response = await fetch('/api/date-operations', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                operation: 'addDays',
+                                params: { startDate: today, days: -28 }
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.currentWeekStart = data.weekStart;
+                        }
+                    } catch (error) {
+                        console.error('Error parsing lastmonth URL parameter:', error);
+                    }
                 }
             } else if (range === 'last90days' && window.location.pathname.includes('analytics')) {
-                this.setDatePreset('90days');
+                await this.setDatePreset('90days');
             }
         } else if (week) {
             // Handle specific week for tracker like ?week=2025-01-06
-            const weekDate = new Date(week + 'T00:00:00');
-            if (!isNaN(weekDate.getTime())) {
-                this.currentWeekStart = this.getWeekStart(weekDate);
+            try {
+                const response = await fetch('/api/current-week', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        targetDate: new Date(week + 'T12:00:00').toISOString()
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    this.currentWeekStart = data.currentWeek;
+                }
+            } catch (error) {
+                console.error('Error parsing week URL parameter:', error);
             }
         } else if (start && end) {
             // Handle custom date range like ?start=2025-01-01&end=2025-01-31
@@ -105,12 +149,36 @@ class EmployeeTracker {
                     if (startInput && endInput) {
                         startInput.value = start;
                         endInput.value = end;
-                        this.setDatePreset('custom');
+                        await this.setDatePreset('custom');
                         this.applyCustomDateRange();
                     }
                 }, 100);
             }
         }
+    }
+    
+    // Helper method to get server's today date
+    async getServerToday() {
+        try {
+            const response = await fetch('/api/date-operations', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    operation: 'getToday',
+                    params: {}
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                return data.today;
+            }
+        } catch (error) {
+            console.error('Error getting server today:', error);
+        }
+        
+        // Fallback - should not be used in production
+        return new Date().toISOString().split('T')[0];
     }
     
     generateShareURL() {
@@ -291,11 +359,11 @@ class EmployeeTracker {
         document.getElementById('export-csv').addEventListener('click', () => this.exportData('csv'));
         document.getElementById('export-json').addEventListener('click', () => this.exportData('json'));
         
-        document.getElementById('preset-week').addEventListener('click', () => this.setDatePreset('week'));
-        document.getElementById('preset-month').addEventListener('click', () => this.setDatePreset('month'));
-        document.getElementById('preset-90days').addEventListener('click', () => this.setDatePreset('90days'));
-        document.getElementById('preset-custom').addEventListener('click', () => this.setDatePreset('custom'));
-        document.getElementById('apply-date-range').addEventListener('click', () => this.applyCustomDateRange());
+        document.getElementById('preset-week').addEventListener('click', async () => await this.setDatePreset('week'));
+        document.getElementById('preset-month').addEventListener('click', async () => await this.setDatePreset('month'));
+        document.getElementById('preset-90days').addEventListener('click', async () => await this.setDatePreset('90days'));
+        document.getElementById('preset-custom').addEventListener('click', async () => await this.setDatePreset('custom'));
+        document.getElementById('apply-date-range').addEventListener('click', async () => await this.applyCustomDateRange());
         
         // Add listener for include empty button toggle
         const toggleIncludeBtn = document.getElementById('toggle-include-empty');
@@ -410,12 +478,45 @@ class EmployeeTracker {
         }
     }
     
+    // Server-side week calculation (preferred over client-side)
+    async getWeekStartFromServer(date) {
+        this.debugLog(`getWeekStartFromServer called with date: ${date}`);
+        
+        try {
+            const response = await fetch('/api/current-week', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    targetDate: date ? new Date(date).toISOString() : new Date().toISOString()
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.debugLog(`getWeekStartFromServer result: ${data.currentWeek}`);
+                return data.currentWeek;
+            } else {
+                this.debugLog(`getWeekStartFromServer failed with status: ${response.status}`);
+                return this.getWeekStartFallback(date);
+            }
+        } catch (error) {
+            this.debugLog(`getWeekStartFromServer error:`, error);
+            return this.getWeekStartFallback(date);
+        }
+    }
+    
+    // Fallback client-side calculation (only used when server fails)
     getWeekStart(date) {
+        this.debugLog(`getWeekStart FALLBACK called with date: ${date}`);
+        return this.getWeekStartFallback(date);
+    }
+    
+    getWeekStartFallback(date) {
         // Fallback client-side week calculation (server calculation is preferred)
         const appTimezone = this.appTimezone || 'America/New_York';
-        const d = new Date(date);
+        const d = new Date(date || new Date());
         
-        this.debugLog(`getWeekStart called with date: ${date}, timezone: ${appTimezone}`);
+        this.debugLog(`getWeekStartFallback called with date: ${date || 'now'}, timezone: ${appTimezone}`);
         
         // Use proper timezone conversion via Intl.DateTimeFormat
         const formatter = new Intl.DateTimeFormat('en-US', {
@@ -448,7 +549,7 @@ class EmployeeTracker {
         const mondayDay = String(monday.getDate()).padStart(2, '0');
         
         const result = `${mondayYear}-${mondayMonth}-${mondayDay}`;
-        this.debugLog(`getWeekStart result: ${result}`);
+        this.debugLog(`getWeekStartFallback result: ${result}`);
         
         return result;
     }
@@ -465,15 +566,30 @@ class EmployeeTracker {
         return `${year}-${month}-${day}`;
     }
     
-    updateWeekDisplay() {
-        // Add time component to ensure correct local date parsing
-        const startDate = new Date(this.currentWeekStart + 'T00:00:00');
-        const endDate = new Date(this.currentWeekStart + 'T00:00:00');
-        endDate.setDate(startDate.getDate() + 6);
-        
-        const formatDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        document.getElementById('week-display').textContent = 
-            `${formatDate(startDate)} - ${formatDate(endDate)}, ${startDate.getFullYear()}`;
+    async updateWeekDisplay() {
+        // Use server-side formatting to avoid any timezone issues
+        try {
+            const response = await fetch('/api/date-operations', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    operation: 'formatWeekDisplay',
+                    params: { weekStartDate: this.currentWeekStart }
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('week-display').textContent = data.display;
+            } else {
+                // Fallback display
+                document.getElementById('week-display').textContent = `Week of ${this.currentWeekStart}`;
+            }
+        } catch (error) {
+            console.error('Error formatting week display:', error);
+            // Fallback display
+            document.getElementById('week-display').textContent = `Week of ${this.currentWeekStart}`;
+        }
         
         document.getElementById('week-picker').value = this.currentWeekStart;
     }
@@ -519,7 +635,7 @@ class EmployeeTracker {
         }
         
         this.debugLog(`changeWeek - calling updateWeekDisplay and loadTimeEntries`);
-        this.updateWeekDisplay();
+        await this.updateWeekDisplay();
         this.loadTimeEntries();
     }
     
@@ -563,7 +679,7 @@ class EmployeeTracker {
         }
         
         this.debugLog(`setWeek - calling updateWeekDisplay and loadTimeEntries`);
-        this.updateWeekDisplay();
+        await this.updateWeekDisplay();
         this.loadTimeEntries();
     }
     
@@ -1182,55 +1298,51 @@ class EmployeeTracker {
         }
     }
     
-    initializeDateRange() {
-        this.setDatePreset('week');
+    async initializeDateRange() {
+        await this.setDatePreset('week');
     }
     
-    setDatePreset(preset) {
+    async setDatePreset(preset) {
         document.querySelectorAll('.btn-preset').forEach(btn => btn.classList.remove('active'));
         document.getElementById(`preset-${preset}`).classList.add('active');
         
-        const today = new Date();
-        let startDate, endDate;
-        
-        switch (preset) {
-            case 'week':
-                // Get the previous full week (Monday to Sunday)
-                const currentWeekStart = this.getWeekStart(today);
-                startDate = new Date(currentWeekStart);
-                startDate.setDate(startDate.getDate() - 7); // Go to previous Monday
-                endDate = new Date(startDate);
-                endDate.setDate(endDate.getDate() + 6); // Go to that week's Sunday
-                break;
-            case 'month':
-                // Last 30 days
-                startDate = new Date(today);
-                startDate.setDate(today.getDate() - 30);
-                endDate = new Date(today);
-                break;
-            case '90days':
-                // Last 90 days
-                startDate = new Date(today);
-                startDate.setDate(today.getDate() - 90);
-                endDate = new Date(today);
-                break;
-            case 'custom':
-                document.getElementById('custom-date-range').style.display = 'flex';
-                return;
+        if (preset === 'custom') {
+            document.getElementById('custom-date-range').style.display = 'flex';
+            return;
         }
         
-        document.getElementById('custom-date-range').style.display = 'none';
-        
-        this.currentDateRange = { 
-            start: this.formatDateInAppTimezone(startDate), 
-            end: this.formatDateInAppTimezone(endDate), 
-            preset 
-        };
-        
-        this.loadAnalytics();
+        // Use server-side date calculations
+        try {
+            const response = await fetch('/api/date-operations', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    operation: 'calculateDateRange',
+                    params: { preset }
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                document.getElementById('custom-date-range').style.display = 'none';
+                
+                this.currentDateRange = { 
+                    start: data.startDate, 
+                    end: data.endDate, 
+                    preset 
+                };
+                
+                this.loadAnalytics();
+            } else {
+                console.error('Error calculating date range for preset:', preset);
+            }
+        } catch (error) {
+            console.error('Error in setDatePreset:', error);
+        }
     }
     
-    applyCustomDateRange() {
+    async applyCustomDateRange() {
         const startDate = document.getElementById('start-date').value;
         const endDate = document.getElementById('end-date').value;
         
@@ -1239,13 +1351,37 @@ class EmployeeTracker {
             return;
         }
         
-        if (new Date(startDate) > new Date(endDate)) {
-            alert('Start date must be before end date');
-            return;
+        // Use server-side date validation to avoid timezone issues
+        try {
+            const response = await fetch('/api/date-operations', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    operation: 'validateDateRange',
+                    params: { startDate, endDate }
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (!data.valid) {
+                    alert(data.message || 'Invalid date range');
+                    return;
+                }
+                
+                this.currentDateRange = { start: startDate, end: endDate, preset: 'custom' };
+                this.loadAnalytics();
+            } else {
+                // Fallback validation (less reliable due to timezone issues)
+                this.currentDateRange = { start: startDate, end: endDate, preset: 'custom' };
+                this.loadAnalytics();
+            }
+        } catch (error) {
+            console.error('Error validating date range:', error);
+            // Fallback validation (less reliable due to timezone issues)
+            this.currentDateRange = { start: startDate, end: endDate, preset: 'custom' };
+            this.loadAnalytics();
         }
-        
-        this.currentDateRange = { start: startDate, end: endDate, preset: 'custom' };
-        this.loadAnalytics();
     }
     
     toggleIncludeEmpty() {
@@ -1386,14 +1522,40 @@ class EmployeeTracker {
             const data = await response.json();
             const offset = parseInt(data.value || 0);
             
-            const today = new Date();
-            const targetDate = new Date(today);
-            targetDate.setDate(today.getDate() + (offset * 7));
-            this.currentWeekStart = this.getWeekStart(targetDate);
+            // Use server-side date calculation
+            const today = await this.getServerToday();
+            const dateResponse = await fetch('/api/date-operations', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    operation: 'addWeeks',
+                    params: { startDate: today, weeks: offset }
+                })
+            });
+            
+            if (dateResponse.ok) {
+                const dateData = await dateResponse.json();
+                this.currentWeekStart = dateData.weekStart;
+            } else {
+                // Fallback to current week from server
+                const currentWeekResponse = await fetch('/api/current-week');
+                if (currentWeekResponse.ok) {
+                    const currentWeekData = await currentWeekResponse.json();
+                    this.currentWeekStart = currentWeekData.currentWeek;
+                }
+            }
         } catch (error) {
             console.error('Error loading default week setting:', error);
-            // Fallback to current week
-            this.currentWeekStart = this.getWeekStart(new Date());
+            // Fallback to current week from server
+            try {
+                const currentWeekResponse = await fetch('/api/current-week');
+                if (currentWeekResponse.ok) {
+                    const currentWeekData = await currentWeekResponse.json();
+                    this.currentWeekStart = currentWeekData.currentWeek;
+                }
+            } catch (fallbackError) {
+                console.error('Error loading fallback week:', fallbackError);
+            }
         }
     }
     
@@ -1437,13 +1599,27 @@ class EmployeeTracker {
                 messageDiv.textContent = 'Default week setting saved successfully!';
                 messageDiv.className = 'message success';
                 
-                // Update current week immediately
-                const today = new Date();
-                const targetDate = new Date(today);
-                targetDate.setDate(today.getDate() + (parseInt(offset) * 7));
-                this.currentWeekStart = this.getWeekStart(targetDate);
-                this.updateWeekDisplay();
-                this.loadTimeEntries();
+                // Update current week immediately using server-side calculation
+                try {
+                    const today = await this.getServerToday();
+                    const dateResponse = await fetch('/api/date-operations', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            operation: 'addWeeks',
+                            params: { startDate: today, weeks: parseInt(offset) }
+                        })
+                    });
+                    
+                    if (dateResponse.ok) {
+                        const dateData = await dateResponse.json();
+                        this.currentWeekStart = dateData.weekStart;
+                        await this.updateWeekDisplay();
+                        this.loadTimeEntries();
+                    }
+                } catch (updateError) {
+                    console.error('Error updating week display:', updateError);
+                }
             } else {
                 messageDiv.textContent = data.error || 'Error saving setting';
                 messageDiv.className = 'message error';
@@ -1482,10 +1658,18 @@ class EmployeeTracker {
                 // Update timezone immediately
                 this.appTimezone = timezone;
                 
-                // Recalculate current week with new timezone
-                this.currentWeekStart = this.getWeekStart(new Date());
-                this.updateWeekDisplay();
-                this.loadTimeEntries();
+                // Recalculate current week with new timezone using server
+                try {
+                    const currentWeekResponse = await fetch('/api/current-week');
+                    if (currentWeekResponse.ok) {
+                        const currentWeekData = await currentWeekResponse.json();
+                        this.currentWeekStart = currentWeekData.currentWeek;
+                        await this.updateWeekDisplay();
+                        this.loadTimeEntries();
+                    }
+                } catch (updateError) {
+                    console.error('Error updating week after timezone change:', updateError);
+                }
             } else {
                 messageDiv.textContent = data.error || 'Error saving timezone setting';
                 messageDiv.className = 'message error';
