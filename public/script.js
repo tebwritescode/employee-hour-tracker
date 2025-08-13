@@ -20,10 +20,11 @@ class EmployeeTracker {
     }
     
     async init() {
+        // Set up basic UI first - always do this regardless of async operations
+        this.setupEventListeners();
+        this.handleDirectRouting();
+        
         try {
-            // Set up basic UI first
-            this.setupEventListeners();
-            this.handleDirectRouting();
             
             // Load essential config with timeout
             await Promise.race([
@@ -64,8 +65,14 @@ class EmployeeTracker {
             this.startAutoRefresh();
         } catch (error) {
             console.error('Initialization failed:', error);
-            // Show error message to user
-            document.body.innerHTML = '<div style="text-align: center; padding: 50px; color: red;"><h1>Loading Error</h1><p>The application failed to initialize. Please refresh the page.</p></div>';
+            // Show error in console and try to continue with basic functionality
+            console.warn('Application initialization failed, but UI should still be functional');
+            // Ensure event listeners are set up even if initialization fails
+            try {
+                this.setupEventListeners();
+            } catch (e) {
+                console.error('Failed to setup event listeners:', e);
+            }
         }
     }
     
