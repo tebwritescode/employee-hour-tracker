@@ -9,6 +9,10 @@
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
+## ⚠️ Security Notice
+
+**Important:** Versions prior to v1.6.17 contain security vulnerabilities that have been fixed. Users should upgrade to the latest version. See [SECURITY_ADVISORY.md](./SECURITY_ADVISORY.md) for details.
+
 ---
 
 ## Screenshots
