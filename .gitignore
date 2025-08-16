@@ -68,3 +68,8 @@ pnpm-lock.yaml
 
 # Claude Code settings (local configuration)
 .claude/settings.local.json
+
+# Test files and development scripts (not for production)
+test-*.js
+populate-test-data.js
+DOCKER_HUB_UPDATE.md
