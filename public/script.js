@@ -38,18 +38,22 @@ class EmployeeTracker {
             await this.loadTimezoneSettings(); 
             await this.loadVersion();
             
-            // Try to get current week from server
-            try {
-                await this.loadCurrentWeekFromServer();
-                console.log('✅ Server week loaded:', this.currentWeekStart);
-            } catch (error) {
-                console.warn('Server week load failed, using fallback');
+            // Parse URL parameters first to check for shared links
+            await this.parseURLParameters();
+            
+            // Try to get current week from server (only if no URL week parameter)
+            if (!new URLSearchParams(window.location.search).get('week')) {
+                try {
+                    await this.loadCurrentWeekFromServer();
+                    console.log('✅ Server week loaded:', this.currentWeekStart);
+                } catch (error) {
+                    console.warn('Server week load failed, using fallback');
+                }
             }
             
             await this.updateWeekDisplay();
             await this.loadEmployees();
             await this.loadTimeEntries();
-            await this.parseURLParameters();
             
             this.checkAuthentication();
             this.startAutoRefresh();

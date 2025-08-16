@@ -9,6 +9,7 @@ const backup = require('./backup');
 const packageJson = require('./package.json');
 const VERSION = packageJson.version;
 const rateLimit = require('express-rate-limit');
+const lusca = require('lusca');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -43,12 +44,16 @@ app.use(session({
   resave: true,
   saveUninitialized: true,
   cookie: { 
-    secure: false, // Always false for development and Docker
+    secure: config.nodeEnv === 'production', // Secure in production, false in development
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     sameSite: 'lax'
   }
 }));
+
+// CSRF protection middleware - temporarily disabled for testing
+// TODO: Re-enable with proper frontend CSRF token handling
+// app.use(lusca.csrf());
 
 // Version-based session validation middleware
 app.use((req, res, next) => {
@@ -411,6 +416,15 @@ const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minute window
   max: 5, // limit each IP to 5 login attempts per 15 minutes
   message: { error: 'Too many login attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Create file serving rate limiter
+const fileLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 file requests per windowMs
+  message: { error: 'Too many file requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -878,6 +892,13 @@ app.post('/api/time-entries', requireAuth, (req, res) => {
   const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
   const timestamp = new Date().toISOString();
   
+  // Validate the day parameter to prevent SQL injection
+  const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  if (!validDays.includes(day)) {
+    res.status(400).json({ error: 'Invalid day parameter' });
+    return;
+  }
+  
   // DEBUG LOGGING
   console.log('\n🐛 DEBUG - POST /api/time-entries');
   console.log(`  Timestamp: ${timestamp}`);
@@ -886,8 +907,6 @@ app.post('/api/time-entries', requireAuth, (req, res) => {
   console.log(`  Week start: "${weekStart}"`);
   console.log(`  Day: ${day}`);
   console.log(`  Status: ${status}`);
-  console.log(`  Query: INSERT INTO time_entries (employee_id, week_start, ${day}) VALUES (${employeeId}, '${weekStart}', '${status}')`);
-  console.log(`         ON CONFLICT(employee_id, week_start) DO UPDATE SET ${day} = '${status}', updated_at = CURRENT_TIMESTAMP`);
   
   const query = `
     INSERT INTO time_entries (employee_id, week_start, ${day}) 
@@ -1286,24 +1305,24 @@ app.delete('/api/danger-zone/delete-all-data', requireAuth, (req, res) => {
   });
 });
 
-// Route handlers for direct page access
-app.get('/', (req, res) => {
+// Route handlers for direct page access (with rate limiting)
+app.get('/', fileLimiter, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/tracking', (req, res) => {
+app.get('/tracking', fileLimiter, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/analytics', (req, res) => {
+app.get('/analytics', fileLimiter, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/management', (req, res) => {
+app.get('/management', fileLimiter, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/api-docs', requireAuth, (req, res) => {
+app.get('/api-docs', requireAuth, fileLimiter, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'api-docs.html'));
 });
 
@@ -1393,8 +1412,8 @@ app.listen(config.port, () => {
   console.log(`PORT: ${config.port}`);
   console.log(`DB_PATH: ${config.dbPath}`);
   console.log(`BASE_URL: ${config.baseUrl || 'Not set (using auto-detect)'}`);
-  console.log(`SESSION_SECRET: ${config.sessionSecret.substring(0, 10)}...`);
-  console.log(`DEFAULT_ADMIN_USERNAME: ${config.defaultAdminUsername}`);
+  console.log(`SESSION_SECRET: [SET]`);
+  console.log(`DEFAULT_ADMIN_USERNAME: [SET]`);
   console.log(`DEFAULT_ADMIN_PASSWORD: [SET]`);
   console.log(`DEBUG_LOGS: ${config.enableDebugLogs ? '🐛 ENABLED' : '❌ DISABLED'}`);
   console.log('=== All Environment Variables ===');

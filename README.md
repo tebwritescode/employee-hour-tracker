@@ -2,7 +2,7 @@
 
 > A comprehensive web application for tracking if employees entered their work time with real-time analytics, management features, and automated backups.
 
-![Version](https://img.shields.io/badge/Version-1.6.16-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.6.17-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![Express](https://img.shields.io/badge/Express-4.18-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange)
@@ -22,12 +22,16 @@
 
 </details>
 
-## 🆕 What's New in v1.6.16 - STABLE RELEASE
+## 🆕 What's New in v1.6.17 - 🔒 SECURITY RELEASE
 
-### 🔧 Critical Fixes & Improvements
-- **FIXED**: JavaScript syntax errors preventing application loading
-- **ENHANCED**: Clear debug status indicators in server logs (`DEBUG_LOGS: 🐛 ENABLED/❌ DISABLED`)
-- **IMPROVED**: Robust initialization system with proper error handling
+### 🔒 Security Fixes
+- **FIXED**: Cookie security - Secure flag properly set in production
+- **FIXED**: Sensitive data exposure - Removed secrets from server logs  
+- **FIXED**: SQL injection vulnerability - Added input validation
+- **FIXED**: Missing rate limiting - Added to file serving routes
+- **FIXED**: Share URL functionality - Week parameter parsing works correctly
+
+*For complete changelog details, see [CHANGELOG.md](CHANGELOG.md)*
 - **TESTED**: Comprehensive automated testing for all navigation functionality
 - **STABLE**: Ready for production deployment with full timezone safety
 

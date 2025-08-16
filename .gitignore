@@ -65,3 +65,6 @@ docker-volumes/
 # package-lock.json is intentionally NOT ignored
 yarn.lock
 pnpm-lock.yaml
+
+# Claude Code settings (local configuration)
+.claude/settings.local.json

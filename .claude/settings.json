@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm *)",
+      "Bash(node *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(mkdir ./*)",
+      "Bash(cp ./* ./*)",
+      "Bash(mv ./* ./*)", 
+      "Bash(rm -rf ./node_modules)",
+      "Bash(rm -rf ./dist)",
+      "Bash(rm -rf ./build)",
+      "Bash(rm -rf ./backups/*)",
+      "Bash(rm *.log)",
+      "Bash(rm *.tmp)",
+      "Bash(rm *.db)",
+      "Bash(chmod +x ./*.sh)",
+      "Bash(ls *)",
+      "Bash(cat ./*)",
+      "Bash(head ./*)",
+      "Bash(tail ./*)",
+      "Bash(grep * ./*)",
+      "Bash(rg * ./*)",
+      "Bash(find . *)",
+      "Bash(which *)",
+      "Bash(pkill -f \"node server.js\")"
+    ]
+  }
+}

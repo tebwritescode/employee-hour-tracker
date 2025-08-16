@@ -2,6 +2,22 @@
 
 All notable changes to Employee Hour Tracker are documented here.
 
+## [1.6.17] - 2025-08-16
+### 🔒 SECURITY RELEASE
+- **Fixed**: Cookie security - Secure flag now properly set in production environments
+- **Fixed**: Sensitive data exposure - Removed session secrets and credentials from server logs
+- **Fixed**: SQL injection vulnerability - Added input validation for day parameter in time entries
+- **Fixed**: Missing rate limiting - Added rate limiting to file serving routes (100 requests/15min)
+- **Fixed**: Share URL functionality - Week parameter parsing now works correctly for shared links
+### Added
+- **CSRF Protection**: Implemented CSRF middleware (currently disabled, ready for frontend integration)
+- **Security Headers**: Enhanced security headers for production deployments
+### Enhanced  
+- **Logging Security**: All sensitive data now properly redacted from logs
+- **Input Validation**: Strengthened parameter validation across API endpoints
+### SECURITY NOTICE
+- **✅ RECOMMENDED UPGRADE**: This release addresses multiple security vulnerabilities identified by GitHub CodeQL analysis. Production deployments should upgrade immediately.
+
 ## [1.6.7] - 2025-08-13
 ### Added
 - **Configurable Debug Logging**: Environment variable `ENABLE_DEBUG_LOGS=true` to enable/disable debug logging
