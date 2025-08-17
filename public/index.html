@@ -2,20 +2,96 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Employee Hour Tracker</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Hour Tracker">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- iOS Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/icons/icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/icons/icon-76x76.png">
+    
+    <!-- iOS Splash Screens -->
+    <link rel="apple-touch-startup-image" href="/icons/splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/icons/splash-1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/icons/splash-1536x2048.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/icons/splash-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/icons/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/icons/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/icons/splash-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/icons/splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/icons/splash-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/icons/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/icons/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    
+    <!-- Standard Icons -->
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512x512.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png">
+    
+    <!-- Theme Colors -->
+    <meta name="theme-color" content="#667eea">
+    <meta name="msapplication-TileColor" content="#667eea">
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png">
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Track and analyze employee work hours with beautiful analytics and reporting">
+    <meta name="keywords" content="employee, time tracking, analytics, productivity, business">
+    <meta name="author" content="tebwritescode">
+    
     <link rel="stylesheet" href="style.css">
     <script src="chart.js"></script>
 </head>
 <body>
     <div class="container">
-        <header>
+        <!-- PWA Detection and Conditional Header -->
+        <header id="desktop-header">
             <h1>Employee Hour Tracker</h1>
             <nav>
                 <button id="time-tracking-tab" class="nav-btn active">Time Tracking</button>
                 <button id="analytics-tab" class="nav-btn">Analytics</button>
                 <button id="management-tab" class="nav-btn">Management</button>
             </nav>
+        </header>
+
+        <!-- iOS-Style PWA Header -->
+        <header id="pwa-header" class="pwa-header" style="display: none;">
+            <div class="pwa-title-bar">
+                <div class="pwa-title">
+                    <h1>⏰ Hour Tracker</h1>
+                </div>
+                <button id="pwa-settings-btn" class="pwa-settings-btn">
+                    <span>👤</span>
+                </button>
+            </div>
+            
+            <!-- iOS-style Employee Picker -->
+            <div class="pwa-employee-selector">
+                <select id="pwa-employee-picker" class="pwa-picker">
+                    <option value="">Select Employee...</option>
+                </select>
+            </div>
+            
+            <!-- iOS-style Week Navigation -->
+            <div class="pwa-week-nav">
+                <button id="pwa-prev-week" class="pwa-nav-btn">‹</button>
+                <div class="pwa-week-display">
+                    <span id="pwa-week-text">This Week</span>
+                    <span id="pwa-date-range" class="pwa-date-range">Loading...</span>
+                </div>
+                <button id="pwa-next-week" class="pwa-nav-btn">›</button>
+            </div>
         </header>
 
         <div id="time-tracking-section" class="section active">
@@ -68,6 +144,19 @@
                     </button>
                     <button id="export-csv" class="btn btn-secondary">Export CSV</button>
                     <button id="export-json" class="btn btn-secondary">Export JSON</button>
+                </div>
+            </div>
+
+            <!-- Employee Selection Section -->
+            <div class="employee-focus-section">
+                <div class="employee-selector">
+                    <h3>View Analytics For:</h3>
+                    <div class="employee-selection-buttons">
+                        <button id="all-employees-btn" class="employee-filter-btn active">All Employees</button>
+                        <div id="individual-employees" class="individual-employee-buttons">
+                            <!-- Employee buttons will be populated by JavaScript -->
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -335,6 +424,116 @@
                 </div>
             </div>
         </div>
+
+        <!-- iOS-Style PWA Single Employee Week View -->
+        <div id="pwa-section" class="pwa-section" style="display: none;">
+            <div class="pwa-content">
+                <!-- Employee Info Card -->
+                <div id="pwa-employee-info" class="pwa-employee-card">
+                    <div class="pwa-employee-avatar">👤</div>
+                    <div class="pwa-employee-details">
+                        <h2 id="pwa-employee-name">Select Employee</h2>
+                        <span id="pwa-employee-status" class="pwa-status-badge">No employee selected</span>
+                    </div>
+                </div>
+
+                <!-- Weekly Status List -->
+                <div class="pwa-week-list">
+                    <div class="pwa-day-item" data-day="monday">
+                        <div class="pwa-day-info">
+                            <span class="pwa-day-name">Monday</span>
+                            <span class="pwa-day-date" id="pwa-date-monday"></span>
+                        </div>
+                        <button class="pwa-status-btn" data-day="monday" data-status="empty">
+                            <span class="pwa-status-icon">○</span>
+                            <span class="pwa-status-text">Empty</span>
+                        </button>
+                    </div>
+
+                    <div class="pwa-day-item" data-day="tuesday">
+                        <div class="pwa-day-info">
+                            <span class="pwa-day-name">Tuesday</span>
+                            <span class="pwa-day-date" id="pwa-date-tuesday"></span>
+                        </div>
+                        <button class="pwa-status-btn" data-day="tuesday" data-status="empty">
+                            <span class="pwa-status-icon">○</span>
+                            <span class="pwa-status-text">Empty</span>
+                        </button>
+                    </div>
+
+                    <div class="pwa-day-item" data-day="wednesday">
+                        <div class="pwa-day-info">
+                            <span class="pwa-day-name">Wednesday</span>
+                            <span class="pwa-day-date" id="pwa-date-wednesday"></span>
+                        </div>
+                        <button class="pwa-status-btn" data-day="wednesday" data-status="empty">
+                            <span class="pwa-status-icon">○</span>
+                            <span class="pwa-status-text">Empty</span>
+                        </button>
+                    </div>
+
+                    <div class="pwa-day-item" data-day="thursday">
+                        <div class="pwa-day-info">
+                            <span class="pwa-day-name">Thursday</span>
+                            <span class="pwa-day-date" id="pwa-date-thursday"></span>
+                        </div>
+                        <button class="pwa-status-btn" data-day="thursday" data-status="empty">
+                            <span class="pwa-status-icon">○</span>
+                            <span class="pwa-status-text">Empty</span>
+                        </button>
+                    </div>
+
+                    <div class="pwa-day-item" data-day="friday">
+                        <div class="pwa-day-info">
+                            <span class="pwa-day-name">Friday</span>
+                            <span class="pwa-day-date" id="pwa-date-friday"></span>
+                        </div>
+                        <button class="pwa-status-btn" data-day="friday" data-status="empty">
+                            <span class="pwa-status-icon">○</span>
+                            <span class="pwa-status-text">Empty</span>
+                        </button>
+                    </div>
+
+                    <div class="pwa-day-item" data-day="saturday">
+                        <div class="pwa-day-info">
+                            <span class="pwa-day-name">Saturday</span>
+                            <span class="pwa-day-date" id="pwa-date-saturday"></span>
+                        </div>
+                        <button class="pwa-status-btn" data-day="saturday" data-status="empty">
+                            <span class="pwa-status-icon">○</span>
+                            <span class="pwa-status-text">Empty</span>
+                        </button>
+                    </div>
+
+                    <div class="pwa-day-item" data-day="sunday">
+                        <div class="pwa-day-info">
+                            <span class="pwa-day-name">Sunday</span>
+                            <span class="pwa-day-date" id="pwa-date-sunday"></span>
+                        </div>
+                        <button class="pwa-status-btn" data-day="sunday" data-status="empty">
+                            <span class="pwa-status-icon">○</span>
+                            <span class="pwa-status-text">Empty</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Weekly Summary -->
+                <div class="pwa-week-summary">
+                    <div class="pwa-summary-item">
+                        <span class="pwa-summary-value" id="pwa-entered-count">0</span>
+                        <span class="pwa-summary-label">Entered</span>
+                    </div>
+                    <div class="pwa-summary-item">
+                        <span class="pwa-summary-value" id="pwa-missing-count">0</span>
+                        <span class="pwa-summary-label">Missing</span>
+                    </div>
+                    <div class="pwa-summary-item">
+                        <span class="pwa-summary-value" id="pwa-completion-rate">0%</span>
+                        <span class="pwa-summary-label">Complete</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid #e0e0e0; color: #666; font-size: 14px;">
@@ -344,5 +543,198 @@
     </footer>
 
     <script src="script.js"></script>
+    
+    <!-- PWA Install Banner -->
+    <div id="pwa-install-banner" class="pwa-install-banner" style="display: none;">
+        <div class="pwa-banner-content">
+            <div class="pwa-banner-text">
+                <h4>📱 Install Hour Tracker</h4>
+                <p>Add to your home screen for the best experience</p>
+            </div>
+            <div class="pwa-banner-actions">
+                <button id="pwa-install-btn" class="btn btn-primary">Install</button>
+                <button id="pwa-dismiss-btn" class="btn btn-secondary">Later</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        // PWA Installation
+        let deferredPrompt;
+        let installBanner = document.getElementById('pwa-install-banner');
+        let installBtn = document.getElementById('pwa-install-btn');
+        let dismissBtn = document.getElementById('pwa-dismiss-btn');
+
+        // Check if already installed
+        function isStandalone() {
+            return window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+        }
+
+        // Show install banner for iOS Safari (manual instruction)
+        function showIOSInstallInstructions() {
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !isStandalone()) {
+                // Create iOS-specific install instructions
+                setTimeout(() => {
+                    const banner = document.createElement('div');
+                    banner.className = 'ios-install-banner';
+                    banner.innerHTML = `
+                        <div class="ios-install-content">
+                            <p>📱 <strong>Install Hour Tracker</strong></p>
+                            <p>Tap the Share button <span style="font-size: 18px;">⬆️</span> then "Add to Home Screen"</p>
+                            <button onclick="this.parentElement.parentElement.remove()" class="btn btn-secondary btn-small">Got it</button>
+                        </div>
+                    `;
+                    document.body.appendChild(banner);
+                }, 3000);
+            }
+        }
+
+        // Listen for install prompt (Android/Chrome)
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            if (!isStandalone()) {
+                installBanner.style.display = 'flex';
+            }
+        });
+
+        // Handle install button click
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log('PWA install outcome:', outcome);
+                deferredPrompt = null;
+            }
+            installBanner.style.display = 'none';
+        });
+
+        // Handle dismiss button click
+        dismissBtn.addEventListener('click', () => {
+            installBanner.style.display = 'none';
+            localStorage.setItem('pwa-dismissed', Date.now());
+        });
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registered successfully:', registration);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New version available
+                                    if (confirm('New version available! Refresh to update?')) {
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            });
+        }
+
+        // Show iOS install instructions if appropriate
+        window.addEventListener('load', () => {
+            // Don't show if already dismissed recently (24 hours)
+            const dismissed = localStorage.getItem('pwa-dismissed');
+            const dayAgo = Date.now() - (24 * 60 * 60 * 1000);
+            
+            if (!dismissed || dismissed < dayAgo) {
+                showIOSInstallInstructions();
+            }
+        });
+    </script>
+    
+    <style>
+        /* PWA Install Banner Styles */
+        .pwa-install-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .pwa-banner-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .pwa-banner-text h4 {
+            margin: 0 0 4px 0;
+            font-size: 16px;
+        }
+
+        .pwa-banner-text p {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .pwa-banner-actions {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .pwa-banner-actions .btn {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        /* iOS Install Banner */
+        .ios-install-banner {
+            position: fixed;
+            top: 60px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            z-index: 10000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .ios-install-content p {
+            margin: 8px 0;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .pwa-banner-content {
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+            
+            .pwa-banner-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
 </body>
 </html>

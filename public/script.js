@@ -15,6 +15,8 @@ class EmployeeTracker {
         this.baseUrl = null; // Will be loaded from server config
         this.includeAllEmployees = true; // Default to including all employees
         this.enableDebugLogs = false; // Will be loaded from server config
+        this.selectedEmployeeId = null; // For individual employee analytics
+        this.currentEmployeeData = null; // Store individual employee analytics data
         
         this.init();
     }
@@ -361,6 +363,9 @@ class EmployeeTracker {
         document.getElementById('next-week').addEventListener('click', () => this.changeWeek(1));
         document.getElementById('week-picker').addEventListener('change', (e) => this.setWeek(e.target.value));
         
+        // Employee selection listeners
+        document.getElementById('all-employees-btn').addEventListener('click', () => this.selectAllEmployees());
+        
         // Add share button listeners with safety checks
         const shareTracker = document.getElementById('share-tracker');
         const shareAnalytics = document.getElementById('share-analytics');
@@ -380,6 +385,9 @@ class EmployeeTracker {
         document.getElementById('auth-form').addEventListener('submit', (e) => this.handleLogin(e));
         document.getElementById('logout-btn').addEventListener('click', () => this.handleLogout());
         document.getElementById('add-employee-form').addEventListener('submit', (e) => this.handleAddEmployee(e));
+
+        // PWA-specific event listeners
+        this.setupPWAEventListeners();
         document.getElementById('change-credentials-form').addEventListener('submit', (e) => this.handleChangeCredentials(e));
         document.getElementById('save-week-setting').addEventListener('click', () => this.saveWeekSetting());
         document.getElementById('save-timezone-setting').addEventListener('click', () => this.saveTimezoneSetting());
@@ -724,9 +732,148 @@ class EmployeeTracker {
             // Don't render time grid here - let loadTimeEntries handle it
             // to ensure we always have the correct week's data
             this.renderEmployeesList();
+            this.populateEmployeeButtons();
         } catch (error) {
             console.error('Error loading employees:', error);
         }
+    }
+
+    // Employee selection methods for analytics
+    populateEmployeeButtons() {
+        const container = document.getElementById('individual-employees');
+        if (!container) return;
+
+        container.innerHTML = '';
+        
+        this.employees.forEach(employee => {
+            const button = document.createElement('button');
+            button.className = 'employee-filter-btn';
+            button.textContent = employee.name;
+            button.onclick = () => this.selectIndividualEmployee(employee.id, employee.name);
+            container.appendChild(button);
+        });
+    }
+
+    selectAllEmployees() {
+        this.selectedEmployeeId = null;
+        this.currentEmployeeData = null;
+        
+        // Update button states
+        document.querySelectorAll('.employee-filter-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('all-employees-btn').classList.add('active');
+        
+        // Hide individual employee stats
+        this.hideIndividualEmployeeStats();
+        
+        // Reload analytics for all employees
+        if (this.currentSection === 'analytics') {
+            this.loadAnalytics();
+        }
+    }
+
+    async selectIndividualEmployee(employeeId, employeeName) {
+        this.selectedEmployeeId = employeeId;
+        
+        // Update button states
+        document.querySelectorAll('.employee-filter-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        // Load individual employee data
+        await this.loadIndividualEmployeeAnalytics(employeeId, employeeName);
+    }
+
+    async loadIndividualEmployeeAnalytics(employeeId, employeeName) {
+        try {
+            // Get date range
+            let queryParams = this.currentDateRange.start && this.currentDateRange.end 
+                ? `?start=${this.currentDateRange.start}&end=${this.currentDateRange.end}&includeAll=false`
+                : '?includeAll=false';
+            
+            const response = await fetch(`/api/analytics/by-employee${queryParams}`);
+            const allEmployeesData = await response.json();
+            
+            // Find this specific employee's data
+            const employeeData = allEmployeesData.find(emp => emp.employee_id === employeeId);
+            
+            if (employeeData) {
+                this.currentEmployeeData = { ...employeeData, name: employeeName };
+                this.displayIndividualEmployeeStats();
+                this.hideGeneralAnalytics();
+            }
+        } catch (error) {
+            console.error('Error loading individual employee analytics:', error);
+        }
+    }
+
+    displayIndividualEmployeeStats() {
+        if (!this.currentEmployeeData) return;
+
+        const data = this.currentEmployeeData;
+        const total = data.total_empty + data.total_entered + data.total_not_entered + data.total_incorrect;
+        const completionRate = total > 0 ? (data.total_entered / total * 100) : 0;
+
+        // Create or update individual stats display
+        let statsContainer = document.querySelector('.employee-individual-stats');
+        if (!statsContainer) {
+            statsContainer = document.createElement('div');
+            statsContainer.className = 'employee-individual-stats';
+            
+            // Insert after the employee selector
+            const employeeFocusSection = document.querySelector('.employee-focus-section');
+            employeeFocusSection.insertAdjacentElement('afterend', statsContainer);
+        }
+
+        statsContainer.innerHTML = `
+            <h3>${data.name}</h3>
+            <div class="employee-completion-bar">
+                <div class="employee-completion-progress" style="width: ${completionRate}%"></div>
+            </div>
+            <div class="employee-stats-grid">
+                <div class="employee-stat-item entered">
+                    <div class="employee-stat-value">${data.total_entered}</div>
+                    <div class="employee-stat-label">Entered</div>
+                </div>
+                <div class="employee-stat-item not-entered">
+                    <div class="employee-stat-value">${data.total_not_entered}</div>
+                    <div class="employee-stat-label">Not Entered</div>
+                </div>
+                <div class="employee-stat-item incorrect">
+                    <div class="employee-stat-value">${data.total_incorrect}</div>
+                    <div class="employee-stat-label">Incorrect</div>
+                </div>
+                <div class="employee-stat-item empty">
+                    <div class="employee-stat-value">${data.total_empty}</div>
+                    <div class="employee-stat-label">Empty</div>
+                </div>
+            </div>
+            <p style="text-align: center; color: #666; font-size: 14px; margin-top: 15px;">
+                Completion Rate: <strong style="color: #28a745;">${completionRate.toFixed(1)}%</strong>
+            </p>
+        `;
+    }
+
+    hideIndividualEmployeeStats() {
+        const statsContainer = document.querySelector('.employee-individual-stats');
+        if (statsContainer) {
+            statsContainer.remove();
+        }
+        this.showGeneralAnalytics();
+    }
+
+    hideGeneralAnalytics() {
+        const analyticsGrid = document.querySelector('.analytics-grid');
+        const chartsContainer = document.querySelector('.charts-container');
+        
+        if (analyticsGrid) analyticsGrid.style.display = 'none';
+        if (chartsContainer) chartsContainer.style.display = 'none';
+    }
+
+    showGeneralAnalytics() {
+        const analyticsGrid = document.querySelector('.analytics-grid');
+        const chartsContainer = document.querySelector('.charts-container');
+        
+        if (analyticsGrid) analyticsGrid.style.display = 'grid';
+        if (chartsContainer) chartsContainer.style.display = 'grid';
     }
     
     async loadTimeEntries() {
@@ -2233,6 +2380,240 @@ class EmployeeTracker {
                 messageDiv.className = 'message';
             }, 3000);
         }
+    }
+
+    // PWA-specific functionality
+    setupPWAEventListeners() {
+        // PWA employee picker
+        const pwaPicker = document.getElementById('pwa-employee-picker');
+        if (pwaPicker) {
+            pwaPicker.addEventListener('change', (e) => this.selectPWAEmployee(e.target.value));
+        }
+
+        // PWA week navigation
+        const pwaNextWeek = document.getElementById('pwa-next-week');
+        const pwaPrevWeek = document.getElementById('pwa-prev-week');
+        
+        if (pwaNextWeek) {
+            pwaNextWeek.addEventListener('click', () => this.changePWAWeek(1));
+        }
+        
+        if (pwaPrevWeek) {
+            pwaPrevWeek.addEventListener('click', () => this.changePWAWeek(-1));
+        }
+
+        // PWA status buttons
+        document.querySelectorAll('.pwa-status-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const day = e.currentTarget.getAttribute('data-day');
+                const currentStatus = e.currentTarget.getAttribute('data-status');
+                this.cyclePWAStatus(day, currentStatus, e.currentTarget);
+            });
+        });
+
+        // Detect PWA mode and show appropriate interface
+        this.detectPWAMode();
+    }
+
+    detectPWAMode() {
+        const isPWA = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+        
+        if (isPWA) {
+            // Hide desktop header and show PWA header
+            document.getElementById('desktop-header').style.display = 'none';
+            document.getElementById('pwa-header').style.display = 'block';
+            document.getElementById('pwa-section').style.display = 'block';
+            
+            // Hide all desktop sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+
+            // Update PWA interface
+            this.updatePWAInterface();
+        }
+    }
+
+    async updatePWAInterface() {
+        // Populate employee picker
+        await this.populatePWAEmployeePicker();
+        
+        // Update week display
+        this.updatePWAWeekDisplay();
+        
+        // If an employee is selected, show their data
+        if (this.selectedEmployeeId) {
+            this.showPWAEmployeeData(this.selectedEmployeeId);
+        }
+    }
+
+    async populatePWAEmployeePicker() {
+        const picker = document.getElementById('pwa-employee-picker');
+        if (!picker) return;
+
+        picker.innerHTML = '<option value="">Select Employee...</option>';
+        
+        this.employees.forEach(employee => {
+            const option = document.createElement('option');
+            option.value = employee.id;
+            option.textContent = employee.name;
+            picker.appendChild(option);
+        });
+
+        // Select first employee if none selected
+        if (!this.selectedEmployeeId && this.employees.length > 0) {
+            this.selectedEmployeeId = this.employees[0].id;
+            picker.value = this.selectedEmployeeId;
+            this.showPWAEmployeeData(this.selectedEmployeeId);
+        }
+    }
+
+    updatePWAWeekDisplay() {
+        const weekText = document.getElementById('pwa-week-text');
+        const dateRange = document.getElementById('pwa-date-range');
+        
+        if (weekText && dateRange) {
+            const today = new Date();
+            const weekStart = new Date(this.currentWeekStart);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+
+            const isCurrentWeek = this.isSameWeek(today, weekStart);
+            weekText.textContent = isCurrentWeek ? 'This Week' : 'Week of';
+            
+            const options = { month: 'short', day: 'numeric' };
+            const startStr = weekStart.toLocaleDateString('en-US', options);
+            const endStr = weekEnd.toLocaleDateString('en-US', options);
+            dateRange.textContent = `${startStr} - ${endStr}`;
+        }
+
+        // Update individual day dates
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        days.forEach((day, index) => {
+            const dateSpan = document.getElementById(`pwa-date-${day}`);
+            if (dateSpan) {
+                const date = new Date(this.currentWeekStart);
+                date.setDate(date.getDate() + index);
+                const options = { month: 'short', day: 'numeric' };
+                dateSpan.textContent = date.toLocaleDateString('en-US', options);
+            }
+        });
+    }
+
+    async selectPWAEmployee(employeeId) {
+        if (!employeeId) return;
+        
+        this.selectedEmployeeId = parseInt(employeeId);
+        await this.showPWAEmployeeData(employeeId);
+    }
+
+    async showPWAEmployeeData(employeeId) {
+        const employee = this.employees.find(emp => emp.id === parseInt(employeeId));
+        if (!employee) return;
+
+        // Update employee info
+        const nameEl = document.getElementById('pwa-employee-name');
+        const statusEl = document.getElementById('pwa-employee-status');
+        
+        if (nameEl) nameEl.textContent = employee.name;
+        if (statusEl) statusEl.textContent = 'View weekly status';
+
+        // Get week's data for this employee
+        await this.updatePWAWeekData(employeeId);
+    }
+
+    async updatePWAWeekData(employeeId) {
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        let enteredCount = 0;
+        let missingCount = 0;
+
+        days.forEach((day, index) => {
+            const dayEntry = this.timeEntries.find(entry => 
+                entry.employee_id === parseInt(employeeId) && 
+                entry.week_start === this.currentWeekStart && 
+                entry.day_index === index
+            );
+
+            const status = dayEntry ? dayEntry.status : 'empty';
+            const statusBtn = document.querySelector(`[data-day="${day}"]`);
+            
+            if (statusBtn) {
+                statusBtn.setAttribute('data-status', status);
+                this.updatePWAStatusButton(statusBtn, status);
+            }
+
+            // Count for summary
+            if (status === 'entered') enteredCount++;
+            else if (status === 'not-entered' || status === 'incorrect') missingCount++;
+        });
+
+        // Update summary
+        const enteredEl = document.getElementById('pwa-entered-count');
+        const missingEl = document.getElementById('pwa-missing-count');
+        const completionEl = document.getElementById('pwa-completion-rate');
+
+        if (enteredEl) enteredEl.textContent = enteredCount;
+        if (missingEl) missingEl.textContent = missingCount;
+        if (completionEl) {
+            const total = enteredCount + missingCount;
+            const rate = total > 0 ? Math.round((enteredCount / total) * 100) : 0;
+            completionEl.textContent = `${rate}%`;
+        }
+    }
+
+    updatePWAStatusButton(button, status) {
+        const icon = button.querySelector('.pwa-status-icon');
+        const text = button.querySelector('.pwa-status-text');
+        
+        const statusConfig = {
+            empty: { icon: '○', text: 'Empty' },
+            entered: { icon: '✓', text: 'Entered' },
+            'not-entered': { icon: '✗', text: 'Not Entered' },
+            incorrect: { icon: '⚠', text: 'Incorrect' }
+        };
+
+        const config = statusConfig[status] || statusConfig.empty;
+        
+        if (icon) icon.textContent = config.icon;
+        if (text) text.textContent = config.text;
+    }
+
+    async cyclePWAStatus(day, currentStatus, button) {
+        if (!this.selectedEmployeeId) return;
+
+        // Status cycle: empty -> entered -> not-entered -> incorrect -> empty
+        const statusCycle = ['empty', 'entered', 'not-entered', 'incorrect'];
+        const currentIndex = statusCycle.indexOf(currentStatus);
+        const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
+
+        // Update server
+        const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(day);
+        await this.updateTimeEntryStatus(this.selectedEmployeeId, dayIndex, nextStatus);
+
+        // Update button
+        button.setAttribute('data-status', nextStatus);
+        this.updatePWAStatusButton(button, nextStatus);
+
+        // Refresh data
+        await this.loadTimeEntries();
+        await this.updatePWAWeekData(this.selectedEmployeeId);
+    }
+
+    changePWAWeek(direction) {
+        this.changeWeek(direction);
+        // Update PWA interface after week change
+        setTimeout(() => {
+            this.updatePWAWeekDisplay();
+            if (this.selectedEmployeeId) {
+                this.updatePWAWeekData(this.selectedEmployeeId);
+            }
+        }, 100);
+    }
+
+    isSameWeek(date1, date2) {
+        const week1 = this.getWeekStart(date1);
+        const week2 = this.getWeekStart(date2);
+        return week1.getTime() === week2.getTime();
     }
 }
 
