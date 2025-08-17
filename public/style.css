@@ -626,6 +626,25 @@ nav {
     color: #2c3e50;
 }
 
+.password-requirements {
+    background: #f8f9fa;
+    border-left: 4px solid #007bff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.password-requirements ul {
+    margin: 8px 0 0 0;
+    padding-left: 20px;
+}
+
+.password-requirements li {
+    margin: 4px 0;
+    color: #666;
+    font-size: 14px;
+}
+
 .credential-fields {
     display: flex;
     flex-direction: column;
@@ -1223,13 +1242,12 @@ nav {
 
 /* PWA iOS-Style Interface */
 .pwa-header {
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(20px);
-    border-radius: 0;
-    padding: 15px 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .pwa-title-bar {
@@ -1239,12 +1257,17 @@ nav {
     margin-bottom: 15px;
 }
 
+.pwa-title {
+    display: flex;
+    align-items: center;
+}
+
 .pwa-title h1 {
-    font-size: 1.8em;
+    font-size: 2.5em;
     font-weight: 700;
-    color: #1d1d1f;
+    color: #2c3e50;
     margin: 0;
-    letter-spacing: -0.5px;
+    text-align: center;
 }
 
 .pwa-settings-btn {
@@ -1272,24 +1295,28 @@ nav {
 
 .pwa-picker {
     width: 100%;
-    padding: 12px 16px;
-    border: none;
-    border-radius: 10px;
-    background: #f2f2f7;
-    color: #1d1d1f;
+    padding: 15px 20px;
+    border: 2px solid #e9ecef;
+    border-radius: 25px;
+    background: #f8f9fa;
+    color: #2c3e50;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
     appearance: none;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 12px center;
+    background-position: right 20px center;
     background-repeat: no-repeat;
     background-size: 16px;
-    padding-right: 40px;
+    padding-right: 50px;
 }
 
 .pwa-picker:focus {
     outline: none;
-    background: #e5e5ea;
+    border-color: #667eea;
+    background: #f8f9ff;
+    transform: translateY(-1px);
 }
 
 .pwa-week-nav {
@@ -1302,25 +1329,25 @@ nav {
 }
 
 .pwa-nav-btn {
-    background: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
-    border-radius: 8px;
-    width: 36px;
-    height: 36px;
+    border-radius: 20px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 600;
-    color: #007aff;
+    color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
 .pwa-nav-btn:hover {
-    background: #f8f9fa;
-    transform: scale(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .pwa-week-display {
@@ -1331,7 +1358,7 @@ nav {
 
 .pwa-week-display span {
     display: block;
-    color: #1d1d1f;
+    color: #2c3e50;
 }
 
 .pwa-week-display span:first-child {
@@ -1347,11 +1374,11 @@ nav {
 
 /* PWA Section */
 .pwa-section {
-    background: transparent;
-    border-radius: 0;
-    padding: 0;
-    box-shadow: none;
-    backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
 }
 
 .pwa-content {
@@ -1458,18 +1485,21 @@ nav {
 }
 
 .pwa-status-btn[data-status="entered"] {
-    background: #e8f5e8;
-    color: #34c759;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: 2px solid #28a745;
 }
 
 .pwa-status-btn[data-status="not-entered"] {
-    background: #ffeaea;
-    color: #ff3b30;
+    background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+    color: white;
+    border: 2px solid #dc3545;
 }
 
 .pwa-status-btn[data-status="incorrect"] {
-    background: #fff3e0;
-    color: #ff9500;
+    background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);
+    color: white;
+    border: 2px solid #fd7e14;
 }
 
 .pwa-status-icon {

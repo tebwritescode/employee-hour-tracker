@@ -67,6 +67,7 @@ class EmployeeTracker {
         console.log('🎉 EmployeeTracker ready - buttons should be functional');
     }
     
+    // TODO: Add CSRF token handling when CSRF protection is enabled
     
     async loadConfig() {
         try {
@@ -466,6 +467,12 @@ class EmployeeTracker {
     }
     
     showSection(sectionName) {
+        // Check if password change is required for protected sections
+        if (this.requiresPasswordChange(sectionName)) {
+            this.showPasswordChangeForm();
+            return;
+        }
+        
         document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
         
@@ -721,6 +728,7 @@ class EmployeeTracker {
     
     async loadEmployees() {
         try {
+            console.log('🔄 Loading employees...');
             const response = await fetch('/api/employees', {
                 headers: {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -728,11 +736,27 @@ class EmployeeTracker {
                     'Expires': '0'
                 }
             });
+            
+            if (!response.ok) {
+                console.error('Failed to load employees:', response.status, response.statusText);
+                return;
+            }
+            
             this.employees = await response.json();
+            console.log('✅ Loaded', this.employees.length, 'employees');
+            
             // Don't render time grid here - let loadTimeEntries handle it
             // to ensure we always have the correct week's data
             this.renderEmployeesList();
             this.populateEmployeeButtons();
+            
+            // Update PWA interface if we're in PWA mode
+            const isPWA = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+            const isMobile = this.isMobileDevice();
+            if (isPWA || isMobile) {
+                console.log('🔄 PWA mode detected, updating employee picker after loadEmployees');
+                await this.populatePWAEmployeePicker();
+            }
         } catch (error) {
             console.error('Error loading employees:', error);
         }
@@ -1040,6 +1064,7 @@ class EmployeeTracker {
             });
             const data = await response.json();
             this.isAuthenticated = data.authenticated;
+            this.forcePasswordChange = data.forcePasswordChange || false;
             this.updateManagementUI();
             this.updateTimeGridButtons();
             
@@ -1083,7 +1108,17 @@ class EmployeeTracker {
             });
             
             if (response.ok) {
+                const data = await response.json();
                 this.isAuthenticated = true;
+                this.forcePasswordChange = data.forcePasswordChange || false;
+                
+                // Check if password change is required
+                if (this.forcePasswordChange) {
+                    this.showPasswordChangeForm();
+                    errorDiv.textContent = '';
+                    return;
+                }
+                
                 this.updateManagementUI();
                 this.updateTimeGridButtons();
                 errorDiv.textContent = '';
@@ -1110,6 +1145,60 @@ class EmployeeTracker {
             document.getElementById('password').value = '';
         } catch (error) {
             console.error('Logout error:', error);
+        }
+    }
+    
+    requiresPasswordChange(sectionName) {
+        // Only check authentication status for protected sections
+        // time-tracking is not protected, but analytics and management require authentication
+        const protectedSections = ['analytics', 'management'];
+        
+        if (!protectedSections.includes(sectionName)) {
+            return false;
+        }
+        
+        // Check if authenticated and if password change is required
+        // This will be checked against the server via checkAuthentication
+        return this.isAuthenticated && this.forcePasswordChange;
+    }
+    
+    showPasswordChangeForm() {
+        // Navigate to management tab
+        this.showSection('management');
+        
+        // Scroll to and highlight the credential change form
+        const credentialSection = document.querySelector('.credential-management');
+        const messageDiv = document.getElementById('credential-message');
+        
+        if (credentialSection) {
+            credentialSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Add temporary highlight effect
+            credentialSection.style.border = '2px solid #007bff';
+            credentialSection.style.borderRadius = '8px';
+            credentialSection.style.padding = '15px';
+            
+            // Show informative message
+            messageDiv.textContent = 'Please change your password from the default "admin" to continue using the application.';
+            messageDiv.className = 'message info';
+            messageDiv.style.color = '#0066cc';
+            messageDiv.style.backgroundColor = '#e6f3ff';
+            messageDiv.style.border = '1px solid #99d6ff';
+            messageDiv.style.borderRadius = '4px';
+            messageDiv.style.padding = '10px';
+            messageDiv.style.marginTop = '10px';
+            
+            // Focus on the new username field
+            setTimeout(() => {
+                document.getElementById('new-username').focus();
+            }, 500);
+            
+            // Remove highlight after 3 seconds
+            setTimeout(() => {
+                credentialSection.style.border = '';
+                credentialSection.style.borderRadius = '';
+                credentialSection.style.padding = '';
+            }, 3000);
         }
     }
     
@@ -1163,8 +1252,21 @@ class EmployeeTracker {
             return;
         }
         
-        if (password.length < 6) {
-            messageDiv.textContent = 'Password must be at least 6 characters long';
+        // Client-side password validation to match server requirements
+        if (password.length < 8) {
+            messageDiv.textContent = 'Password must be at least 8 characters long';
+            messageDiv.className = 'message error';
+            return;
+        }
+        
+        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+            messageDiv.textContent = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+            messageDiv.className = 'message error';
+            return;
+        }
+        
+        if (password.toLowerCase().includes('admin') || password.toLowerCase().includes('password')) {
+            messageDiv.textContent = 'Password cannot contain "admin" or "password"';
             messageDiv.className = 'message error';
             return;
         }
@@ -1185,6 +1287,21 @@ class EmployeeTracker {
                 document.getElementById('new-username').value = '';
                 document.getElementById('new-password').value = '';
                 document.getElementById('confirm-password').value = '';
+                
+                // Clear the force password change flag
+                this.forcePasswordChange = false;
+                
+                // If this was a forced password change, redirect to main interface
+                setTimeout(() => {
+                    this.showSection('tracking');
+                    // Clear any special styling from the forced change
+                    const credentialSection = document.querySelector('.credential-management');
+                    if (credentialSection) {
+                        credentialSection.style.border = '';
+                        credentialSection.style.borderRadius = '';
+                        credentialSection.style.padding = '';
+                    }
+                }, 2000);
             } else {
                 messageDiv.textContent = data.error || 'Error updating credentials';
                 messageDiv.className = 'message error';
@@ -2415,10 +2532,19 @@ class EmployeeTracker {
         this.detectPWAMode();
     }
 
+    isMobileDevice() {
+        const userAgent = navigator.userAgent;
+        const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+        const isSmallScreen = window.innerWidth <= 768 || window.innerHeight <= 768;
+        const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        return isMobileUA || (isSmallScreen && hasTouchScreen);
+    }
+
     detectPWAMode() {
         const isPWA = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+        const isMobile = this.isMobileDevice();
         
-        if (isPWA) {
+        if (isPWA || isMobile) {
             // Hide desktop header and show PWA header
             document.getElementById('desktop-header').style.display = 'none';
             document.getElementById('pwa-header').style.display = 'block';
@@ -2429,12 +2555,23 @@ class EmployeeTracker {
                 section.style.display = 'none';
             });
 
-            // Update PWA interface
+            // Update PWA interface immediately with current week
+            this.updatePWAWeekDisplay();
             this.updatePWAInterface();
         }
     }
 
     async updatePWAInterface() {
+        console.log('🔄 Updating PWA interface...');
+        
+        // Ensure employees are loaded first
+        if (this.employees.length === 0) {
+            console.log('📥 Loading employees for PWA...');
+            await this.loadEmployees();
+        }
+        
+        console.log('📋 Current employees count:', this.employees.length);
+        
         // Populate employee picker
         await this.populatePWAEmployeePicker();
         
@@ -2445,12 +2582,18 @@ class EmployeeTracker {
         if (this.selectedEmployeeId) {
             this.showPWAEmployeeData(this.selectedEmployeeId);
         }
+        
+        console.log('✅ PWA interface update complete');
     }
 
     async populatePWAEmployeePicker() {
         const picker = document.getElementById('pwa-employee-picker');
-        if (!picker) return;
+        if (!picker) {
+            console.warn('PWA employee picker not found');
+            return;
+        }
 
+        console.log('🔄 Populating PWA employee picker with', this.employees.length, 'employees');
         picker.innerHTML = '<option value="">Select Employee...</option>';
         
         this.employees.forEach(employee => {
@@ -2458,6 +2601,7 @@ class EmployeeTracker {
             option.value = employee.id;
             option.textContent = employee.name;
             picker.appendChild(option);
+            console.log('➕ Added employee to picker:', employee.name);
         });
 
         // Select first employee if none selected
@@ -2473,6 +2617,11 @@ class EmployeeTracker {
         const dateRange = document.getElementById('pwa-date-range');
         
         if (weekText && dateRange) {
+            // Ensure we have a valid currentWeekStart
+            if (!this.currentWeekStart) {
+                this.currentWeekStart = this.getWeekStart(new Date());
+            }
+            
             const today = new Date();
             const weekStart = new Date(this.currentWeekStart);
             const weekEnd = new Date(weekStart);
@@ -2485,6 +2634,7 @@ class EmployeeTracker {
             const startStr = weekStart.toLocaleDateString('en-US', options);
             const endStr = weekEnd.toLocaleDateString('en-US', options);
             dateRange.textContent = `${startStr} - ${endStr}`;
+            console.log('✅ Updated PWA week display:', `${startStr} - ${endStr}`);
         }
 
         // Update individual day dates
@@ -2613,7 +2763,8 @@ class EmployeeTracker {
     isSameWeek(date1, date2) {
         const week1 = this.getWeekStart(date1);
         const week2 = this.getWeekStart(date2);
-        return week1.getTime() === week2.getTime();
+        // getWeekStart returns a string (YYYY-MM-DD), so compare strings directly
+        return week1 === week2;
     }
 }
 

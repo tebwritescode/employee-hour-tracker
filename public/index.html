@@ -35,6 +35,7 @@
     <link rel="apple-touch-startup-image" href="/icons/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
     
     <!-- Standard Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512x512.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png">
@@ -50,7 +51,7 @@
     <meta name="keywords" content="employee, time tracking, analytics, productivity, business">
     <meta name="author" content="tebwritescode">
     
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
     <script src="chart.js"></script>
 </head>
 <body>
@@ -69,7 +70,8 @@
         <header id="pwa-header" class="pwa-header" style="display: none;">
             <div class="pwa-title-bar">
                 <div class="pwa-title">
-                    <h1>⏰ Hour Tracker</h1>
+                    <img src="/logo.png" alt="Hour Tracker" class="pwa-logo" style="height: 32px; width: 32px; margin-right: 8px; vertical-align: middle;">
+                    <h1>Hour Tracker</h1>
                 </div>
                 <button id="pwa-settings-btn" class="pwa-settings-btn">
                     <span>👤</span>
@@ -284,6 +286,15 @@
 
                 <div class="credential-management">
                     <h3>Change Admin Credentials</h3>
+                    <div class="password-requirements">
+                        <strong>Password Requirements:</strong>
+                        <ul>
+                            <li>At least 8 characters long</li>
+                            <li>Must contain uppercase and lowercase letters</li>
+                            <li>Must contain at least one number</li>
+                            <li>Cannot contain "admin" or "password"</li>
+                        </ul>
+                    </div>
                     <form id="change-credentials-form">
                         <div class="credential-fields">
                             <input type="text" id="new-username" placeholder="New Username" required>
@@ -571,6 +582,16 @@
             return window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
         }
 
+        function isMobileDevice() {
+            // Check for mobile user agents and screen size
+            const userAgent = navigator.userAgent;
+            const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+            const isSmallScreen = window.innerWidth <= 768 || window.innerHeight <= 768;
+            const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            
+            return isMobileUA || (isSmallScreen && hasTouchScreen);
+        }
+
         // Show install banner for iOS Safari (manual instruction)
         function showIOSInstallInstructions() {
             if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !isStandalone()) {
@@ -595,7 +616,8 @@
             e.preventDefault();
             deferredPrompt = e;
             
-            if (!isStandalone()) {
+            // Only show PWA install prompt on mobile devices
+            if (!isStandalone() && isMobileDevice()) {
                 installBanner.style.display = 'flex';
             }
         });

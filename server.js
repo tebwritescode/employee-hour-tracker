@@ -20,7 +20,7 @@ const config = {
   dbPath: process.env.DB_PATH || './employee_tracker.db',
   sessionSecret: process.env.SESSION_SECRET || 'employee-tracker-secret-key',
   defaultAdminUsername: process.env.DEFAULT_ADMIN_USERNAME || 'admin',
-  defaultAdminPassword: process.env.DEFAULT_ADMIN_PASSWORD || 'admin123',
+  defaultAdminPassword: process.env.DEFAULT_ADMIN_PASSWORD || 'admin',
   nodeEnv: process.env.NODE_ENV || 'development',
   baseUrl: process.env.BASE_URL || null, // If not set, frontend will use window.location.origin
   enableDebugLogs: process.env.ENABLE_DEBUG_LOGS === 'true' // Default false unless explicitly enabled
@@ -35,24 +35,39 @@ function debugLog(...args) {
 
 app.use(cors({
   credentials: true,
-  origin: true
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    // Allow configured base URL for production
+    if (process.env.BASE_URL && origin === process.env.BASE_URL) {
+      return callback(null, true);
+    }
+    
+    // Reject all other origins
+    callback(new Error('Not allowed by CORS'));
+  }
 }));
 app.use(express.json());
 app.use(express.static('public'));
 app.use(session({
   secret: config.sessionSecret,
-  resave: true,
-  saveUninitialized: true,
+  resave: false, // Don't save session if unmodified
+  saveUninitialized: false, // Don't create session until something stored
   cookie: { 
-    secure: config.nodeEnv === 'production', // Secure in production, false in development
+    secure: config.nodeEnv === 'production' && process.env.BASE_URL && process.env.BASE_URL.startsWith('https://'),
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     sameSite: 'lax'
   }
 }));
 
-// CSRF protection middleware - temporarily disabled for testing
-// TODO: Re-enable with proper frontend CSRF token handling
+// CSRF protection middleware - TODO: Enable after implementing frontend token handling
 // app.use(lusca.csrf());
 
 // Version-based session validation middleware
@@ -444,6 +459,14 @@ app.use('/api', apiLimiter);
 
 function requireAuth(req, res, next) {
   if ((req.session && req.session.authenticated) || req.apiAuthenticated) {
+    // Check if password change is required - allow password change and essential endpoints
+    if (req.session && req.session.forcePasswordChange && 
+        req.path !== '/api/change-password' && 
+        req.path !== '/api/change-credentials' &&
+        req.path !== '/api/check-auth' &&
+        !req.path.startsWith('/api/tokens')) {
+      return res.status(403).json({ error: 'Password change required', forcePasswordChange: true });
+    }
     next();
   } else {
     res.status(401).json({ error: 'Authentication required' });
@@ -460,6 +483,13 @@ app.post('/api/login', (req, res) => {
     
     if (bcrypt.compareSync(password, user.password_hash)) {
       req.session.authenticated = true;
+      
+      // Check if user is using default credentials and force password change
+      if (username === 'admin' && password === 'admin') {
+        req.session.forcePasswordChange = true;
+        return res.json({ success: true, forcePasswordChange: true });
+      }
+      
       res.json({ success: true });
     } else {
       res.status(401).json({ error: 'Invalid credentials' });
@@ -473,7 +503,60 @@ app.post('/api/logout', (req, res) => {
 });
 
 app.get('/api/check-auth', (req, res) => {
-  res.json({ authenticated: !!req.session.authenticated });
+  res.json({ 
+    authenticated: !!req.session.authenticated,
+    forcePasswordChange: !!req.session.forcePasswordChange
+  });
+});
+
+// CSRF token endpoint - TODO: Enable when CSRF protection is active
+// app.get('/api/csrf-token', (req, res) => {
+//   res.json({ csrfToken: req.csrfToken() });
+// });
+
+app.post('/api/change-password', requireAuth, (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Current password and new password are required' });
+  }
+  
+  // Strong password policy validation
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters long' });
+  }
+  
+  if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+    return res.status(400).json({ error: 'New password must contain at least one uppercase letter, one lowercase letter, and one number' });
+  }
+  
+  if (newPassword.toLowerCase().includes('admin') || newPassword.toLowerCase().includes('password')) {
+    return res.status(400).json({ error: 'New password cannot contain "admin" or "password"' });
+  }
+  
+  db.get('SELECT * FROM admin_users WHERE username = ?', ['admin'], (err, user) => {
+    if (err || !user) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (!bcrypt.compareSync(currentPassword, user.password_hash)) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    
+    const newPasswordHash = bcrypt.hashSync(newPassword, 10);
+    db.run('UPDATE admin_users SET password_hash = ? WHERE username = ?', 
+      [newPasswordHash, 'admin'], 
+      function(err) {
+        if (err) {
+          return res.status(500).json({ error: 'Failed to update password' });
+        }
+        
+        // Clear force password change flag
+        req.session.forcePasswordChange = false;
+        res.json({ success: true, message: 'Password changed successfully' });
+      }
+    );
+  });
 });
 
 app.get('/api/version', (req, res) => {
@@ -537,8 +620,17 @@ app.post('/api/change-credentials', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'Username and password are required' });
   }
   
-  if (password.length < 6) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+  // Strong password policy validation
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+  }
+  
+  if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+    return res.status(400).json({ error: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' });
+  }
+  
+  if (password.toLowerCase().includes('admin') || password.toLowerCase().includes('password')) {
+    return res.status(400).json({ error: 'Password cannot contain "admin" or "password"' });
   }
   
   const passwordHash = bcrypt.hashSync(password, 10);
@@ -549,6 +641,12 @@ app.post('/api/change-credentials', requireAuth, (req, res) => {
       res.status(500).json({ error: err.message });
       return;
     }
+    
+    // Clear force password change flag if it was set
+    if (req.session && req.session.forcePasswordChange) {
+      req.session.forcePasswordChange = false;
+    }
+    
     res.json({ success: true, message: 'Credentials updated successfully' });
   });
 });

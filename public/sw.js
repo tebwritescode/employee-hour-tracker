@@ -1,10 +1,12 @@
-const CACHE_NAME = 'employee-tracker-v1.6.0';
+const CACHE_NAME = 'employee-tracker-v1.6.18';
 const urlsToCache = [
   '/',
   '/style.css',
   '/script.js',
   '/chart.js',
   '/manifest.json',
+  '/logo.png',
+  '/favicon.ico',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png'
 ];
@@ -52,6 +54,11 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // Skip chrome-extension and other non-http(s) schemes
+  if (!event.request.url.startsWith('http')) {
     return;
   }
 
